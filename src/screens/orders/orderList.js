@@ -10,32 +10,7 @@ import Button from "../../../component/button";
 import moment from "moment";
 import { TouchableOpacity } from "react-native-gesture-handler";
 const { width } = Dimensions.get("screen")
-const dummyData = [
-    {
-        id: 1,
-        date: "01 Jul 2022",
-        item: "Samsung Galaxy Note 10",
-        issue: "Display broken",
-        status: "PENDING",
-        statusCode: 0
-    },
-    {
-        id: 2,
-        date: "04 Jul 2022",
-        item: "Acer Laptop",
-        issue: "Keyboard Issue",
-        status: "ONPROCESS",
-        statusCode: 1
-    },
-    {
-        id: 3,
-        date: "08 Jul 2022",
-        item: "HITACHI AC",
-        issue: "Yearly Service",
-        status: "COMPLETED",
-        statusCode: 2
-    }
-]
+
 export default function Success(props) {
     const [pendingOrders, setPendingOrders] = useState([]);
     const [completedOrders, setCompletedOrders] = useState([]);
@@ -46,6 +21,12 @@ export default function Success(props) {
         getPendingOrders();
         getCompletedOrders();
     }, [])
+
+    function refreshFunction() {
+        setLoader(true)
+        getPendingOrders();
+        getCompletedOrders();
+    }
 
     function getPendingOrders() {
         getMethod('order/admin/pending', res => {
@@ -77,7 +58,7 @@ export default function Success(props) {
         if (item.status !== "PROCESSING" && item.status !== "DELIVERED") { item.statusCode = 1 }
         if (item.status === "DELIVERED") { item.statusCode = 2 }
         return (
-            <View style={styles.cardContainer}>
+            <TouchableOpacity activeOpacity={0.8} onPress={()=>props.navigation.navigate("OrderDetails",{ orderData: item })} style={styles.cardContainer}>
                 <View style={styles.imageContainer}>
                     <Text type="heading" title={item.orderItems.length} />
                     <Text type="paragraph" title={`${item.orderItems.length > 1 ? 'items' : 'item'}`} style={{ color: COLOUR.BLACK }} />
@@ -108,7 +89,7 @@ export default function Success(props) {
                 <View style={[styles.statusContainer, { borderTopWidth: 2, borderTopColor: item.statusCode === 0 ? COLOUR.RED : item.statusCode === 1 ? COLOUR.PRIMARY : COLOUR.GREEN }]}>
                     <Text type="label" title={item.status} style={{ fontSize: 12, color: item.statusCode === 0 ? COLOUR.RED : item.statusCode === 1 ? COLOUR.PRIMARY : COLOUR.GREEN }} />
                 </View>
-            </View>
+            </TouchableOpacity>
         )
     }
     return (
@@ -135,6 +116,9 @@ export default function Success(props) {
                             renderCard(item)
                         )
                     }}
+                    ListHeaderComponent={() => {return <View style={{width: "100%", height: 60, alignItems:"center", justifyContent: "center"}}>
+                        <Button title="Refresh" onPress={() => refreshFunction()} />
+                    </View>}}
                     keyExtractor={item => item._id} />
             </View> }
         </View>

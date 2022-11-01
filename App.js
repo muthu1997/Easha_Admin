@@ -35,11 +35,15 @@
  import ProductList from "./src/screens/services/productList";
  //Orders Tab
  import OrderList from "./src/screens/orders/orderList";
+ import OrderData from "./src/screens/orders/orderDetails";
  //Account Tab
  import Account from "./src/screens/account/account";
  import Profile from "./src/screens/account/profile";
  import Feedback from "./src/screens/account/feedback";
  import Language from "./src/screens/account/language";
+ //Delivery
+ import Delivery from "./src/screens/delivery/deliveryList";
+import DeliveryPrice from './src/screens/delivery/deliveryList';
  
  const Stack = createStackNavigator();
  const Tab = createBottomTabNavigator();
@@ -74,6 +78,7 @@
        <Stack.Screen name="ServiceAddress" component={ServiceAddress} options={{headerShown: false}} />
        <Stack.Screen name="AddressList" component={AddressList} options={{headerShown: false}} />
        <Stack.Screen name="productlist" component={ProductList} options={{headerShown: false}} />
+       <Stack.Screen name="DeliveryCharge" component={DeliveryPrice} options={{headerShown: false}} />
      </Stack.Navigator> 
      );
    }
@@ -83,6 +88,7 @@
      <Stack.Navigator>
      <Stack.Screen name="Orders" component={OrderList} options={{headerShown: false}} />
      <Stack.Screen name="Corousal" component={Corousal} options={{headerShown: false}} />
+       <Stack.Screen name="OrderDetails" component={OrderData} options={{headerShown: false}} />
     </Stack.Navigator> 
     );
   }

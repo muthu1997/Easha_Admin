@@ -103,3 +103,32 @@ export async function uploadImage(localImage, name, callback) {
         .catch(error => {console.log(error)
             callback("error")});
 }
+
+export const sendFirebaseNotification = async (message, token) => {
+    var myHeaders = new Headers();
+    myHeaders.append("Authorization", "key=AAAAIKn5mgg:APA91bFLt3pE2GaHcMNPzBKPddQtcfPaZcuiUHLsIgK63f4jXFKJpQmj5RBUC_ho7jLGg00EkcHyrdjCBd6DG0D-oYgyBn3WcyPAyxkb13Qai8HST2DrUr-Of4vKwXbWd7XhOIVDI3i4");
+    myHeaders.append("Content-Type", "application/json");
+
+    var raw = JSON.stringify({
+        "notification": {
+            "title": "Easha Arts",
+            "body": message,
+        },
+        "data": {
+
+        },
+        "to": token
+    });
+
+    var requestOptions = {
+        method: 'POST',
+        headers: myHeaders,
+        body: raw,
+        redirect: 'follow'
+    };
+
+    fetch("https://fcm.googleapis.com/fcm/send", requestOptions)
+        .then(response => response.text())
+        .then(result => console.log(result))
+        .catch(error => console.log('error', error));
+}

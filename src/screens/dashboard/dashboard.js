@@ -21,6 +21,12 @@ const Options = [
         name: "Products",
         icon: "cart",
         screen: "productlist"
+    },
+    {
+        id: 3,
+        name: "Delivery Price",
+        icon: "currency-rupee",
+        screen: "DeliveryCharge"
     }
 ]
 export default function Dashboard(props) {
