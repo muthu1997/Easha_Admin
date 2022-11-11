@@ -6,7 +6,6 @@ import CategoryContainer from "../../../component/categoryContainer";
 import TitleContainer from "../../../component/titleContainer";
 import Services from "../../../component/Services";
 import Asset from "../../../component/assetList";
-import Geolocation from '@react-native-community/geolocation';
 import {Products} from "../../../dummy";
 const Options = [
 
@@ -36,10 +35,10 @@ export default function Dashboard(props) {
         // getLocation();
     },[])
     const getLocation = async() => {
-        await Geolocation.getCurrentPosition(position => {
-            global.location = {latitude: position.coords.latitude, longitude: position.coords.longitude};
-            setLocation({latitude: position.coords.latitude, longitude: position.coords.longitude})
-        })
+        // await Geolocation.getCurrentPosition(position => {
+        //     global.location = {latitude: position.coords.latitude, longitude: position.coords.longitude};
+        //     setLocation({latitude: position.coords.latitude, longitude: position.coords.longitude})
+        // })
     }
 
     return (

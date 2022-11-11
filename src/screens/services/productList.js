@@ -116,6 +116,7 @@ export default function Success(props) {
                 back
                 title="Esha Arts"
                 rightIcon="plus-circle"
+                onBackPress={() => props.navigation.goBack()}
                 onRightButtonPress={() => props.navigation.navigate("NewProduct", {categoryList: categoryList})}
             />
                 <View style={styles.mainContainer}>
@@ -139,7 +140,7 @@ export default function Success(props) {
                                 <Text type="heading" title={"No products found."} style={{ color: COLOUR.DARK_GRAY, fontWeight: "500" }} />
                             </View>
                         }}
-                        keyExtractor={item => item._id} /> }
+                        keyExtractor={(item) => item._id} /> }
                 </View>
             <RBSheet
                 ref={refRBSheet}
