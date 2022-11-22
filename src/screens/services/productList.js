@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { View, StyleSheet, Dimensions, FlatList, Image, ActivityIndicator, Alert } from "react-native";
 import * as COLOUR from "../../../constants/colors";
 import Header from "../../../component/header";
-import { check } from "../../../constants/icons";
 import Text from "../../../component/text";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Button from "../../../component/button";
