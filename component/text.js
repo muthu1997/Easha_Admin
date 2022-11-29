@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
   },
   heading: {
     fontWeight: '700',
-    fontSize: 18,
+    fontSize: 22,
     padding:2
   },
   title: {

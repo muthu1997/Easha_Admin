@@ -1,4 +1,4 @@
-export const PRIMARY = "rgb(120, 74, 246)";
+export const PRIMARY = "#546de5";
 export const SECONDARY = "rgb(122, 74, 146)";
 export const SECONDARY_LIGHT = "rgba(122, 74, 146, 0.5)";
 export const BACKGROUND = "rgb(255, 255, 255)";

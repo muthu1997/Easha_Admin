@@ -1,50 +1,39 @@
 import * as React from 'react';
-import { StyleSheet, TouchableOpacity, View, Image } from 'react-native';
+import { StyleSheet, TouchableOpacity, View, Dimensions } from 'react-native';
 import Icon from "react-native-vector-icons/FontAwesome";
 import MIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import Text from "./text";
 import * as COLOUR from "../constants/colors";
 import { profile, filter } from "../constants/icons";
+const { width, height } = Dimensions;
 
 const Header = props => {
   return (
     <View style={[styles.headerContainer, props.style]}>
-      <View style={{ flexDirection: "row", alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, width: "100%" }}>
+      <View style={{ flexDirection: "row", alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, width: width }}>
         {/* header with back button and title */}
         {props.back || props.title ?
           <View style={styles.backTitleContainer}>
-            <View style={{ flexDirection: "row", alignItems: "center", width: "100%"}}>
-            {props.back ?<TouchableOpacity onPress={() => props.onBackPress()} ><MIcon name="arrow-left" color={COLOUR.PRIMARY} size={25} /></TouchableOpacity> : null }
+            <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
+              {props.back ? <TouchableOpacity onPress={() => props.onBackPress()} ><MIcon name="arrow-left" color={COLOUR.PRIMARY} size={25} /></TouchableOpacity> : null}
               {props.title ?
-                <Text title={props.title} type="title" style={{ fontSize: 18, color: COLOUR.PRIMARY, marginLeft: 10 }} /> : null}
-                {props.rightIcon ? <TouchableOpacity onPress={() => props.onRightButtonPress()} style={{alignItems:"center", justifyContent:"center", padding:5, alignSelf:"flex-end", position:"absolute",right: 10}}>
+                <Text title={props.title} type="title" style={{ fontSize: 18, color: COLOUR.WHITE, marginLeft: 10 }} /> : null}
+              {props.rightIcon ? <TouchableOpacity onPress={() => props.onRightButtonPress()} style={{ alignItems: "center", justifyContent: "center", padding: 5, alignSelf: "flex-end", position: "absolute", right: 10 }}>
                 <MIcon name={props.rightIcon} color={COLOUR.PRIMARY} size={25} />
-                </TouchableOpacity> : null }
+              </TouchableOpacity> : null}
             </View>
           </View> : null}
 
-        {props.name ? <View style={{ width: "100%", paddingVertical: 20, alignItems: 'center', justifyContent: "center" }}>
+        {props.name ? <View style={{ width: "100%", paddingVertical: 20, justifyContent: "center" }}>
           <View>
-            <Text title="Esha Arts" type="title" style={{ fontSize: 25, color: COLOUR.PRIMARY }} />
+            <Text title="Easha Arts" type="title" style={{ fontSize: 20, color: COLOUR.WHITE }} />
           </View>
         </View> : null}
-        {props.signin ?
-          <Text title="Sign In" type="title" style={{ fontSize: 25, marginVertical: 15 }} /> : null}
+        {props.bell ?
+          <TouchableOpacity activeOpacity={0.8}>
+            <Icon name="bell" color={COLOUR.WHITE} size={25} />
+          </TouchableOpacity> : null}
       </View>
-      {props.bell ?
-        <Icon name="bell" color={COLOUR.PRIMARY} size={25} /> : null}
-
-        {/* search bar with filter button */}
-      {props.search ?
-      <View style={{width: "100%", flexDirection: "row", paddingHorizontal: 20, alignItems:"center", justifyContent: "space-around"}}>
-        <TouchableOpacity activeOpacity={0.8} style={[styles.searchButton, { width: props.filter ? "80%" : "90%"}]}>
-          <Icon name="search" color={COLOUR.GRAY} size={15} style={{ marginRight: 10 }} />
-          <Text title="Search" type="paragraph" style={{ color: COLOUR.GRAY, fontWeight: '500' }} />
-        </TouchableOpacity>
-        {props.filter ?<TouchableOpacity activeOpacity={0.8} style={[styles.filterButton]}>
-            <Image source={filter} style={styles.filterImage} resizeMode="contain" />
-        </TouchableOpacity> : null }
-        </View> : null}
     </View>
   );
 }
@@ -54,7 +43,7 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: COLOUR.WHITE
+    backgroundColor: COLOUR.PRIMARY
   },
   searchButton: {
     height: 50,
