@@ -10,3 +10,5 @@ export const order_hide = require("../assets/images/order_hide.png");
 export const acc_vis = require("../assets/images/account_vis.png");
 export const acc_hide = require("../assets/images/account_hide.png");
 export const refer = require("../assets/images/refer.png");
+export const failure = require("../assets/images/failure.png");
+export const net_failure = require("../assets/images/net_failure.png");

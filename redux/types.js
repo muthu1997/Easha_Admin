@@ -1,0 +1,4 @@
+export const STORE_ANALYTICS = "STORE_ANALYTICS";
+export const STORE_CATEGORY = "STORE_CATEGORY";
+export const STORE_CAT_PRODUCT = "STORE_CAT_PRODUCT";
+export const STORE_SIZE = "STORE_SIZE";

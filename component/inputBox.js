@@ -12,31 +12,28 @@
  } from 'react-native';
  import * as COLOUR from "../constants/colors";
 
- class Input extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-          color: COLOUR.LIGHTGRAY
-        }
-      }
-   render() {
+ function Input(props) {
+  const color = COLOUR.LIGHTGRAY;
      return (
          <TextInput 
-         placeholder={this.props.placeholder}
+         placeholder={props.placeholder}
          placeholderTextColor={COLOUR.GRAY}
-         value={this.props.value}
-         onChangeText={(data) => this.props.onChangeText(data)}
+         value={props.value}
+         onChangeText={(data) => props.onChangeText(data)}
         //  onBlur={() => {
         //   this.setState({color: COLOUR.LIGHTGRAY})
-        //    this.props.onBlur ? this.props.onBlur() : console.log('onblur')
+        //    props.onBlur ? props.onBlur() : console.log('onblur')
         //  }}
-         secureTextEntry={this.props.secureTextEntry}
-         keyboardType={this.props.keyboardType}
-         multiline={this.props.multiline ? true : false}
-         style={[styles.button, {borderColor: this.state.color},this.props.style]} 
+        ref={props.ref ? props.ref : null}
+        autoFocus={props.autoFocus ? props.autoFocus : false}
+         secureTextEntry={props.secureTextEntry}
+         onSubmitEditing={() => props.onSubmitEditing ? props.onSubmitEditing() : null}
+         returnKeyType={props.returnKeyType}
+         keyboardType={props.keyboardType}
+         multiline={props.multiline ? true : false}
+         style={[styles.button, {borderColor: color},props.style]} 
         />
      )
-   }
  }
 
  const styles = StyleSheet.create({

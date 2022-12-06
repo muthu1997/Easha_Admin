@@ -1,45 +1,53 @@
-import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, Dimensions, FlatList, Image, ActivityIndicator } from "react-native";
+import React, { useState, useEffect } from "react";
+import { View, StyleSheet, Dimensions, FlatList, Image, Modal } from "react-native";
 import * as COLOUR from "../../../constants/colors";
 import Header from "../../../component/header";
-import { check } from "../../../constants/icons";
 import Text from "../../../component/text";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import Button from "../../../component/button";
-const { width } = Dimensions.get("screen")
-import { Products } from "../../../dummy";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import { getMethod } from "../../../function"
+import { storeCategory } from "../../../redux/actions";
+/* basic imports */
+import { FailureComponent } from "../mascelinous/requestFail";
+import { isInternetConnection } from "../../../utils/checkInternet";
+import { useDispatch, useSelector } from "react-redux";
+import Loader from "../../../component/loader";
+import { failure, net_failure } from "../../../constants/icons";
 
 export default function Success(props) {
-    const [category, setCategory] = useState([]);
-    const [loader, setLoader] = useState(true);
+    /* loader and error components */
+    const [showErrorComponent, setErrorComponent] = useState(false)
+    const [showNetErrorComponent, setNetErrorComponent] = useState(false)
+    const [loading, setLoading] = useState(true);
+    const dispatch = useDispatch();
+
+    const categoryList = useSelector(state => state.categoryList)
 
     useEffect(() => {
         getCategoryList();
     }, [])
 
-    const getCategoryList = () => {
-        setLoader(true)
-        getMethod('category/list', res => {
-            if (res !== "error") {
-                setCategory(res.data);
-            } else {
-                alert("Problem while getting categories")
-            }
-            setLoader(false)
-        })
+    const getCategoryList = async () => {
+        if (await isInternetConnection()) {
+            dispatch(storeCategory()).then(res => {
+                setLoading(false);
+            }).catch(error => {
+                setLoading(false);
+                setErrorComponent(true);
+            })
+        } else {
+            setNetErrorComponent(true);
+        }
     }
     const renderIconButton = (icon, colour, item) => {
         return (
-            <TouchableOpacity onPress={() => props.navigation.navigate("AddCategory",{type: "edit", data: item})} style={[styles.iconButton, { backgroundColor: colour }]}>
+            <TouchableOpacity onPress={() => props.navigation.navigate("AddCategory", { type: "edit", data: item })} style={[styles.iconButton, { backgroundColor: colour }]}>
                 <Icon name={icon} size={15} color={COLOUR.WHITE} />
             </TouchableOpacity>
         )
     }
     const renderCard = item => {
         return (
-            <View style={styles.cardContainer}>
+            <TouchableOpacity activeOpacity={0.8} onPress={() => props.navigation.navigate("productlist", {catId: item._id, title: item.name})} style={styles.cardContainer}>
                 <View style={styles.imageContainer}>
                     <Image source={{ uri: item.image }} style={styles.itemImage} resizeMode="cover" />
                 </View>
@@ -50,40 +58,62 @@ export default function Success(props) {
                 </View>
 
                 <View style={{ height: 30, flexDirection: "row", alignItems: "center", position: "absolute", top: 5, right: 5 }}>
-                    {renderIconButton("pencil", COLOUR.GREEN, item)}
+                    {renderIconButton("pencil", COLOUR.CYON, item)}
                 </View>
-            </View>
+            </TouchableOpacity>
         )
+    }
+    if (loading) {
+        return <View style={styles.loaderContainer}><Loader /></View>
     }
     return (
         <View style={styles.container}>
             <Header
-                back
-                onBackPress={() => props.navigation.goBack()}
-                title="Categories"
+                title="Product categories"
                 rightIcon="plus-circle"
-                onRightButtonPress={() => props.navigation.navigate("AddCategory",{type: "add"})}
+                onRightButtonPress={() => props.navigation.navigate("AddCategory", { type: "add" })}
             />
-            {loader ? <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                <ActivityIndicator color={COLOUR.PRIMARY} size="large" />
-            </View> :
-                <View style={styles.mainContainer}>
-                    <FlatList
-                        data={category}
-                        showsVerticalScrollIndicator={false}
-                        numColumns={2}
-                        ListHeaderComponent={() => {
-                            return <TouchableOpacity onPress={() => getCategoryList()} style={{ width: "50%", height: 40, alignItems: "center", justifyContent: "center", backgroundColor: COLOUR.SECONDARY, borderRadius: 10, alignSelf: "center", marginTop: 10 }}>
-                                <Text type="paragraph" title={"Refresh"} style={{ color: COLOUR.WHITE }} />
-                            </TouchableOpacity>
-                        }}
-                        renderItem={({ item, index }) => {
-                            return (
-                                renderCard(item)
-                            )
-                        }}
-                        keyExtractor={(item, index) => (item._id+index)} />
-                </View>}
+            <View style={styles.mainContainer}>
+                <FlatList
+                    data={categoryList}
+                    showsVerticalScrollIndicator={false}
+                    numColumns={2}
+                    ListHeaderComponent={() => {
+                        return <View style={styles.headOptionsContainer}>
+                        <Text type="label" title={`Total ${categoryList.length} categories`} />
+                        </View>
+                    }}
+                    renderItem={({ item, index }) => {
+                        return (
+                            renderCard(item)
+                        )
+                    }}
+                    keyExtractor={(item, index) => (item._id + index)} />
+            </View>
+            <Modal visible={showErrorComponent}>
+                <FailureComponent
+                    errtitle="Oooops!"
+                    errdescription="Unable to load the service. Connectivity issue is there. Please press try again button to load again."
+                    positiveTitle="Try again"
+                    onPressPositive={() => {
+                        setLoading(true);
+                        getCategoryList();
+                        setErrorComponent(false);
+                    }}
+                    icon={failure} />
+            </Modal>
+            <Modal visible={showNetErrorComponent}>
+                <FailureComponent
+                    errtitle="Oooops!"
+                    errdescription="Unable to connect. Please check your internet and try again"
+                    positiveTitle="Try again"
+                    onPressPositive={() => {
+                        setLoading(true);
+                        getCategoryList();
+                        setNetErrorComponent(false);
+                    }}
+                    icon={net_failure} />
+            </Modal>
         </View>
     )
 }
@@ -127,7 +157,8 @@ const styles = StyleSheet.create({
         overflow: "hidden",
         position: "absolute",
         bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.5)"
+        backgroundColor: "rgba(0,0,0,0.5)",
+        alignItems: "center"
     },
     statusContainer: {
         width: "30%",
@@ -149,5 +180,17 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         backgroundColor: COLOUR.PRIMARY,
         marginRight: 5
+    },
+    loaderContainer: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    headOptionsContainer: {
+        width: "100%",
+        height: 80,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between"
     }
 })

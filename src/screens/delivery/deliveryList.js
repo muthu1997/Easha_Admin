@@ -7,7 +7,7 @@ import Text from "../../../component/text";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Button from "../../../component/button";
 const { width } = Dimensions.get("screen")
-import { getMethod, deleteMethod, putMethod } from "../../../function"
+import { getMethod, deleteMethod, putMethod } from "../../../utils/function"
 import { TouchableOpacity } from "react-native-gesture-handler";
 import RBSheet from "react-native-raw-bottom-sheet";
 import Input from "../../../component/inputBox";

@@ -23,7 +23,11 @@ import EditProduct from "./src/screens/product/editProduct";
 import AddCategory from "./src/screens/product/category";
 import CategoryList from "./src/screens/product/categoryList";
 import Home from "./src/screens/dashboard/dashboard";
-import ProductList from "./src/screens/services/productList";
+import ProductList from "./src/screens/product/productList";
+import { Provider } from 'react-redux';
+import { createStore, applyMiddleware } from "redux";
+import thunk from 'redux-thunk'
+import Store from "./redux/store";
 //Orders Tab
 import OrderList from "./src/screens/orders/orderList";
 import OrderData from "./src/screens/orders/orderDetails";
@@ -32,19 +36,21 @@ import Account from "./src/screens/account/account";
 import Profile from "./src/screens/account/profile";
 //Delivery
 import DeliveryPrice from './src/screens/delivery/deliveryList';
+//Settings
+import Settings from "./src/screens/settings/settings";
+import PhotoSizeList from "./src/screens/settings/photoSizeList";
+import AddSize from "./src/screens/settings/addSize";
+import EditSize from "./src/screens/settings/editSize";
+
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
+const configureStore = createStore(Store, applyMiddleware(thunk));
 export default function App() {
 
   function HomeTab() {
     return (
       <Stack.Navigator>
         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
-        <Stack.Screen name="NewProduct" component={NewProduct} options={{ headerShown: false }} />
-        <Stack.Screen name="EditProduct" component={EditProduct} options={{ headerShown: false }} />
-        <Stack.Screen name="AddCategory" component={AddCategory} options={{ headerShown: false }} />
-        <Stack.Screen name="CategoryList" component={CategoryList} options={{ headerShown: false }} />
-        <Stack.Screen name="productlist" component={ProductList} options={{ headerShown: false }} />
         <Stack.Screen name="DeliveryCharge" component={DeliveryPrice} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
@@ -59,11 +65,34 @@ export default function App() {
     );
   }
 
+  function CategoryTab() {
+    return (
+      <Stack.Navigator>
+      <Stack.Screen name="CategoryList" component={CategoryList} options={{ headerShown: false }} />
+      <Stack.Screen name="NewProduct" component={NewProduct} options={{ headerShown: false }} />
+      <Stack.Screen name="EditProduct" component={EditProduct} options={{ headerShown: false }} />
+      <Stack.Screen name="AddCategory" component={AddCategory} options={{ headerShown: false }} />
+      <Stack.Screen name="productlist" component={ProductList} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    );
+  }
+
   function AccountTab() {
     return (
       <Stack.Navigator>
-        <Stack.Screen name="Account" component={Account} options={{ headerShown: false }} />
+        <Stack.Screen name="Accounts" component={Account} options={{ headerShown: false }} />
         <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    );
+  }
+
+  function SettingsTab() {
+    return (
+      <Stack.Navigator>
+        <Stack.Screen name="Setting" component={Settings} options={{ headerShown: false }} />
+        <Stack.Screen name="PhotoSizeList" component={PhotoSizeList} options={{ headerShown: false }} />
+        <Stack.Screen name="AddSize" component={AddSize} options={{ headerShown: false }} />
+        <Stack.Screen name="EditSize" component={EditSize} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -77,7 +106,7 @@ export default function App() {
             tabBarIcon: (data) => data.focused === true ? <Image source={home} resizeMode="contain" style={styles.icon} /> :
               <Image source={home_hide} resizeMode="contain" style={styles.icon} />
           }} />
-        <Tab.Screen name="Categories" component={DeliveryPrice} options={
+        <Tab.Screen name="Categories" component={CategoryTab} options={
           {
             headerShown: false,
             tabBarIcon: (data) => data.focused === true ? <Image source={cat_vis} resizeMode="contain" style={styles.icon} /> :
@@ -90,7 +119,7 @@ export default function App() {
               <Image source={order_vis} resizeMode="contain" style={styles.icon} /> :
               <Image source={order_hide} resizeMode="contain" style={styles.icon} />
           }} />
-        <Tab.Screen name="Settings" component={Account} options={
+        <Tab.Screen name="Settings" component={SettingsTab} options={
           {
             headerShown: false,
             tabBarIcon: (data) => data.focused === true ? <Image source={set_vis} resizeMode="contain" style={styles.icon} /> :
@@ -108,10 +137,12 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar backgroundColor={COLOUR.PRIMARY} />
-      {BottomTab()}
-    </NavigationContainer>
+    <Provider store={configureStore}>
+      <NavigationContainer>
+        <StatusBar backgroundColor={COLOUR.PRIMARY} />
+        {BottomTab()}
+      </NavigationContainer>
+    </Provider>
   );
 }
 

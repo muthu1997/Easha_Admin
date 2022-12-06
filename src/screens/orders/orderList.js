@@ -5,7 +5,7 @@ import Header from "../../../component/header";
 import { check } from "../../../constants/icons";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Text from "../../../component/text";
-import { getMethod, deleteMethod } from "../../../function"
+import { getMethod, deleteMethod } from "../../../utils/function"
 import Button from "../../../component/button";
 import moment from "moment";
 import { TouchableOpacity } from "react-native-gesture-handler";

@@ -15,11 +15,11 @@ const Header = props => {
         {props.back || props.title ?
           <View style={styles.backTitleContainer}>
             <View style={{ flexDirection: "row", alignItems: "center", width: "100%" }}>
-              {props.back ? <TouchableOpacity onPress={() => props.onBackPress()} ><MIcon name="arrow-left" color={COLOUR.PRIMARY} size={25} /></TouchableOpacity> : null}
+              {props.back ? <TouchableOpacity onPress={() => props.onBackPress()} ><MIcon name="arrow-left" color={COLOUR.WHITE} size={25} /></TouchableOpacity> : null}
               {props.title ?
                 <Text title={props.title} type="title" style={{ fontSize: 18, color: COLOUR.WHITE, marginLeft: 10 }} /> : null}
               {props.rightIcon ? <TouchableOpacity onPress={() => props.onRightButtonPress()} style={{ alignItems: "center", justifyContent: "center", padding: 5, alignSelf: "flex-end", position: "absolute", right: 10 }}>
-                <MIcon name={props.rightIcon} color={COLOUR.PRIMARY} size={25} />
+                <MIcon name={props.rightIcon} color={COLOUR.WHITE} size={25} />
               </TouchableOpacity> : null}
             </View>
           </View> : null}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { View, StyleSheet, StatusBar, TouchableOpacity, Image } from "react-native";
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, Image, ToastAndroid, Modal } from "react-native";
 import * as COLOUR from "../../../constants/colors";
-import { postMethod, putMethod, uploadImage } from "../../../function";
 import Text from "../../../component/text";
 import Button from "../../../component/button";
 import Input from "../../../component/inputBox";
@@ -9,6 +8,13 @@ import { Checkbox } from 'react-native-paper';
 import Icon from "react-native-vector-icons/MaterialCommunityIcons"
 import { launchImageLibrary } from 'react-native-image-picker';
 import RNFetchBlob from 'rn-fetch-blob';
+import { uploadImg, updateMethod, storeCategory, postMethodFunction } from "../../../redux/actions";
+/* basic imports */
+import { FailureComponent } from "../mascelinous/requestFail";
+import { isInternetConnection } from "../../../utils/checkInternet";
+import { useDispatch } from "react-redux";
+import { failure, net_failure } from "../../../constants/icons";
+import Header from "../../../component/header";
 
 export default function SignupFunction(props) {
     const [name, setName] = useState("");
@@ -16,6 +22,10 @@ export default function SignupFunction(props) {
     const [checked, setChecked] = React.useState(false);
     const [image, setImage] = React.useState("");
     const [id, setId] = React.useState("");
+    /* loader and error components */
+    const [showErrorComponent, setErrorComponent] = useState(false)
+    const [showNetErrorComponent, setNetErrorComponent] = useState(false)
+    const dispatch = useDispatch();
 
     useEffect(() => {
         if (props.route.params.type === "edit") {
@@ -65,117 +75,147 @@ export default function SignupFunction(props) {
         });
     };
 
-    function submitCategory() {
-        if (image === "") {
-            alert("Image required...")
-        } else if (name === "") {
-            alert("Name required....")
-        } else {
-            setLoader(true)
-            uploadImage(image, name, response => {
-                if (response != "error") {
+    async function submitCategory() {
+        if (await isInternetConnection()) {
+            if (image === "") {
+                ToastAndroid.show("Image required...", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+            } else if (name === "") {
+                ToastAndroid.show("Name required...", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+            } else {
+                setLoader(true);
+                await uploadImg(image, name).then(async response => {
                     let body = {
                         "name": name,
                         "image": response
                     }
-                    postMethod('category/newcategory', body, res => {
-                        if (res !== "error") {
-                            setName("");
-                            setImage("");
-                            if (!checked) {
-                                props.navigation.goBack()
-                            }
-                        } else {
-                            alert("Something went wrong.")
+                    dispatch(postMethodFunction('category/newcategory', body)).then(res => {
+                        dispatch(storeCategory())
+                        setName("");
+                        setImage("");
+                        if (!checked) {
+                            props.navigation.goBack()
                         }
                         setLoader(false)
+                    }).catch(err => {
+                        setLoader(false)
+                        ToastAndroid.show("Something went wrong. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
                     })
-                } else {
-                    alert("Something went wrong.")
+                }).catch(error => {
                     setLoader(false)
-                }
-            })
-            
+                    ToastAndroid.show("Something went wrong. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+                })
+            }
+        } else {
+            setNetErrorComponent(true);
         }
     }
 
-    function updateCategory() {
-        if (image === "") {
-            alert("Image required...")
-        } else if (name === "") {
-            alert("Name required....")
-        } else {
-            setLoader(true)
-            uploadImage(image, name, response => {
-                console.log(response)
-                if (response != "error") {
+    async function updateCategory() {
+        if (await isInternetConnection()) {
+            if (image === "") {
+                ToastAndroid.show("Image required...", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+            } else if (name === "") {
+                ToastAndroid.show("Name required...", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+            } else {
+                setLoader(true);
+                await uploadImg(image, name).then(async response => {
                     let body = {
                         "name": name,
                         "image": response
                     }
-                    putMethod(`category/${id}`, body, res => {
-                        if (res !== "error") {
-                            setName("");
-                            setImage("");
-                            props.navigation.goBack()
-                        } else {
-                            alert("Something went wrong.")
-                        }
+                    dispatch(updateMethod(`category/${id}`, body)).then(res => {
+                        dispatch(storeCategory())
+                        setName("");
+                        setImage("");
+                        props.navigation.goBack()
                         setLoader(false)
+                    }).catch(err => {
+                        setLoader(false)
+                        ToastAndroid.show("Something went wrong. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
                     })
-                } else {
-                    alert("Something went wrong.")
+                }).catch(error => {
                     setLoader(false)
-                }
-            })
+                    ToastAndroid.show("Something went wrong. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+                })
+            }
+        } else {
+            setNetErrorComponent(true);
         }
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar backgroundColor={COLOUR.WHITE} barStyle="dark-content" />
-            <View style={styles.headingContainer}>
-                <Text title={props.route.params.type === "edit" ? "Edit Category" : "New Category"} type="title" style={{ fontSize: 28 }} />
-            </View>
-            <TouchableOpacity onPress={() => imageHandler()} activeOpacity={9} style={styles.imageButton} >
-                {!image ? <Icon name="plus" size={50} color={COLOUR.PRIMARY} /> : <Image source={{ uri: image }} resizeMode="cover" style={{ width: "100%", height: "100%" }} />}
-            </TouchableOpacity>
-            <View style={styles.formContainer}>
-                <Input
-                    value={name}
-                    onChangeText={data => setName(data)}
-                    keyboardType={"default"}
-                    placeholder="Category Name" />
+        <SafeAreaView style={styles.container}>
+            <Header
+                back
+                onBackPress={() => props.navigation.goBack()}
+                title={props.route.params.type === "edit" ? "Edit Category" : "New Category"}
+            />
+            <View style={styles.mainContainer}>
+                <TouchableOpacity onPress={() => imageHandler()} activeOpacity={9} style={[styles.imageButton, { borderWidth: !image ? 2 : 0 }]} >
+                    {!image ? <Icon name="plus" size={50} color={COLOUR.PRIMARY} /> : <Image source={{ uri: image }} resizeMode="cover" style={{ width: "100%", height: "100%" }} />}
+                </TouchableOpacity>
+                <View style={styles.formContainer}>
+                    <Input
+                        value={name}
+                        onChangeText={data => setName(data)}
+                        keyboardType={"default"}
+                        placeholder="Category Name" />
 
-                <View style={styles.termsContainer}>
-                    <Checkbox
-                        status={checked ? 'checked' : 'unchecked'}
-                        color={COLOUR.PRIMARY}
-                        onPress={() => {
-                            setChecked(!checked);
-                        }}
-                    />
-                    <Text title="Continue adding category." type="paragraph" style={{ width: "90%" }} />
+                    <View style={styles.termsContainer}>
+                        <Checkbox
+                            status={checked ? 'checked' : 'unchecked'}
+                            color={COLOUR.PRIMARY}
+                            onPress={() => {
+                                setChecked(!checked);
+                            }}
+                        />
+                        <Text title="Continue adding category." type="paragraph" style={{ width: "90%" }} />
+                    </View>
+                    <Button title={props.route.params.type === "edit" ? "Update" : "Create"} loader={loader} onPress={() => {
+                        if (props.route.params.type === "edit") {
+                            updateCategory()
+                        } else {
+                            submitCategory()
+                        }
+                    }} style={[styles.buttonStyle]} textStyle={{ color: COLOUR.WHITE }} />
                 </View>
-                <Button title={props.route.params.type === "edit" ? "Update" : "Create"} loader={loader} onPress={() => {
-                    if (props.route.params.type === "edit") {
-                        updateCategory()
-                    } else {
-                        submitCategory()
-                    }
-                }} style={[styles.buttonStyle]} textStyle={{ color: COLOUR.WHITE }} />
             </View>
-        </View>
+            <Modal visible={showErrorComponent}>
+                <FailureComponent
+                    errtitle="Oooops!"
+                    errdescription="Unable to load the service. Connectivity issue is there. Please press try again button to load again."
+                    positiveTitle="Try again"
+                    onPressPositive={() => {
+                        getCategoryList();
+                        setErrorComponent(false);
+                    }}
+                    icon={failure} />
+            </Modal>
+            <Modal visible={showNetErrorComponent}>
+                <FailureComponent
+                    errtitle="Oooops!"
+                    errdescription="Unable to connect. Please check your internet and try again"
+                    positiveTitle="Try again"
+                    onPressPositive={() => {
+                        getCategoryList();
+                        setNetErrorComponent(false);
+                    }}
+                    icon={net_failure} />
+            </Modal>
+        </SafeAreaView>
     )
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
+        backgroundColor: COLOUR.WHITE
+    },
+    mainContainer: {
+        flex: 1,
+        alignItems: "center",
         justifyContent: "center",
-        backgroundColor: COLOUR.WHITE,
-        paddingHorizontal: '10%'
+        paddingHorizontal: "10%"
     },
     mainIcon: {
         width: 80,
@@ -208,7 +248,6 @@ const styles = StyleSheet.create({
         width: "50%",
         height: 150,
         borderRadius: 10,
-        borderWidth: 2,
         borderColor: COLOUR.PRIMARY,
         overflow: "hidden",
         alignItems: "center",

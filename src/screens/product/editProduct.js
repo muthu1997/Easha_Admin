@@ -12,7 +12,7 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import RBSheet from "react-native-raw-bottom-sheet";
 import { FlatList } from "react-native-gesture-handler";
 import RNFetchBlob from 'rn-fetch-blob';
-import {postMethod, uploadImage, putMethod} from "../../../function";
+import {postMethod, uploadImage, putMethod} from "../../../utils/function";
 import moment from "moment";
 
 export default function SignupFunction(props) {

@@ -7,7 +7,7 @@ import Text from "../../../component/text";
 import Button from "../../../component/button";
 import TitleContainer from "../../../component/titleContainer";
 const { width, height } = Dimensions.get("screen");
-import { putMethod, getMethod, sendFirebaseNotification } from "../../../function";
+import { putMethod, getMethod, sendFirebaseNotification } from "../../../utils/function";
 import Input from "../../../component/inputBox";
 import RBSheet from "react-native-raw-bottom-sheet";
 import moment from "moment";
