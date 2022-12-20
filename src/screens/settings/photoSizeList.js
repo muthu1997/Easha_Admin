@@ -23,7 +23,11 @@ export default function SizeList(props) {
     const productSizeList = useSelector(state => state.productSize)
 
     useEffect(() => {
-        getSizeList();
+        if(productSizeList?.length === 0) {
+            getSizeList();
+        }else {
+            setLoading(false);
+        }
     }, [])
 
     const getSizeList = async () => {
@@ -140,7 +144,7 @@ export default function SizeList(props) {
                     positiveTitle="Try again"
                     onPressPositive={() => {
                         setLoading(true);
-                        getCategoryList();
+                        getSizeList();
                         setErrorComponent(false);
                     }}
                     icon={failure} />
@@ -152,7 +156,7 @@ export default function SizeList(props) {
                     positiveTitle="Try again"
                     onPressPositive={() => {
                         setLoading(true);
-                        getCategoryList();
+                        getSizeList();
                         setNetErrorComponent(false);
                     }}
                     icon={net_failure} />

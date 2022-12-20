@@ -1,100 +1,139 @@
-import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, Dimensions, FlatList, Image, TouchableOpacity } from "react-native";
+import React, { useState } from "react";
+import { View, StyleSheet, BackHandler, Dimensions, TouchableOpacity, DeviceEventEmitter, Alert, ToastAndroid } from "react-native";
 import * as COLOUR from "../../../constants/colors";
+import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import Header from "../../../component/header";
-import { right_arrow, account, referrel, contactus, feedback, language, logout } from "../../../constants/icons";
 import Text from "../../../component/text";
+import { getFunction } from "../../../constants/apirequest";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+// import {logoutFunction} from "../../redux/action";
 import Button from "../../../component/button";
-import Share from 'react-native-share';
-const { width } = Dimensions.get("screen")
-const menuData = [
+import * as STRINGS from "../../../constants/strings";
+import { useSelector, useDispatch } from 'react-redux';
+const { width } = Dimensions.get("screen");
+const options = [
     {
         id: 1,
-        item: "My profile",
-        image: account,
-        screen: "Profile"
+        name: "Edit Profile",
+        code: "ep"
     },
-    {
-        id: 2,
-        item: "Refer a friend",
-        image: referrel,
-        screen: "share"
-    },
+    // {
+    //     id: 2,
+    //     name: "Setup Shop",
+    //     code: "ep"
+    // },
     {
         id: 3,
-        item: "Contact us",
-        image: contactus
+        name: "Terms And Conditions",
+        code: "tc"
     },
     {
         id: 4,
-        item: "Send feedback",
-        image: feedback,
-        screen: "Feedback"
+        name: "Privacy Policy",
+        code: "pp"
     },
     {
         id: 5,
-        item: "Choose Language",
-        image: language,
-        screen: "Language"
-    },
-    {
-        id: 6,
-        item: "Sign out",
-        image: logout
+        name: "Customer Support",
+        code: "cs"
     }
 ]
-export default function Success(props) {
-    const onShare = () => {
-        const shareOptions = {
-            title: 'Share about the app',
-            failOnCancel: false,
-            // urls: [images.image1, images.image2],
-          };
-        Share.open(shareOptions)
-            .then((res) => {
-                console.log(res);
-            })
-            .catch((err) => {
-                err && console.log(err);
-            });
+
+const logoutoptions = [
+    {
+        id: 2,
+        name: "Ask Question",
+        code: "rq"
+    },
+    {
+        id: 4,
+        name: "Terms And Conditions",
+        code: "tc"
+    }
+]
+export default function CartScreen(props) {
+    const user = useSelector(state => state.profile);
+    const [custVisible, setCustVisible] = useState(false);
+    const dispatch = useDispatch();
+
+    function redirector(item) {
+        if (item.code === "ma") {
+            props.navigation.navigate("MyAddressList");
+        } else if (item.code === "mo") {
+            props.navigation.navigate("MyOrders");
+        } else if (item.code === "rq") {
+            props.navigation.navigate("Query");
+        } else if (item.code === "tc" || item.code === "pp") {
+            props.navigation.navigate("Terms", {url: item.code === "tc" ? 'https://sites.google.com/view/easha-chat/home' : 'https://sites.google.com/view/eashappolicy/home'});
+        } else if (item.code === "ep") {
+            props.navigation.navigate("EditProfile");
+        } else if (item.code === "cs") {
+            props.navigation.navigate("ChatScreen");
+        }
     }
 
-    const renderCard = item => {
-        return (
-            <TouchableOpacity activeOpacity={0.8} onPress={() => {
-                if(item.screen === "share"){
-                    onShare();
-                }else {
-                    props.navigation.navigate(item.screen)
+    async function logoutAllFunction() {
+        Alert.alert("", "Are you sure, want to logout?", [
+            {
+                text: "LOGOUT",
+                onPress: async() => {
+                    await AsyncStorage.removeItem(STRINGS.UID);
+                    await AsyncStorage.removeItem(STRINGS.TOKEN);
+                    await AsyncStorage.removeItem(STRINGS.TOKEN_UPDATE);
+                    global.headers = undefined;
+                    ToastAndroid.show("Logging out", ToastAndroid.BOTTOM, ToastAndroid.CENTER);
+                    setTimeout(() => {
+                        DeviceEventEmitter.emit("LOGOUT", true);
+                    },1000)
                 }
-                }} style={styles.cardContainer}>
-                <View style={styles.imageContainer}>
-                    <Image source={item.image} style={styles.itemImage} resizeMode="contain" />
-                </View>
-                <View style={styles.dataContainer}>
-                    <View>
-                        <Text type="heading" title={item.item} />
-                    </View>
-                    <Image source={right_arrow} style={{ width: 20, height: 20 }} resizeMode="contain" />
-                </View>
-            </TouchableOpacity>
-        )
-    }
+            },
+            {
+                text: "CANCEL"
+            }
+        ])
+    }   
+
     return (
         <View style={styles.container}>
             <Header
-                title="Account"
-            />
-            <View style={styles.mainContainer}>
-                <FlatList
-                    data={menuData}
-                    renderItem={({ item, index }) => {
-                        return (
-                            renderCard(item)
-                        )
-                    }}
-                    keyExtractor={item => item.id} />
+                title="My Account" />
+            <View style={styles.settingsContainer}>
+                {user ?
+                <View style={styles.optionsContainer}>
+                    {options.map((item, index) => {
+                        return <TouchableOpacity onPress={() => redirector(item)} key={index} activeOpacity={0.8} style={{ width: "100%", height: 40, justifyContent: "center", paddingHorizontal: 5 }}>
+                            <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                                <Text title={item.name} type="label" lines={1} style={{ color: COLOUR.BLACK }} />
+                                <Icon name="chevron-right" size={25} color={COLOUR.BLACK} />
+                            </View>
+                        </TouchableOpacity>
+                    })}
+                </View> : 
+                <View style={styles.optionsContainer}>
+                {logoutoptions.map((item, index) => {
+                    return <TouchableOpacity onPress={() => redirector(item)} key={index} activeOpacity={0.8} style={{ width: "100%", height: 40, justifyContent: "center", paddingHorizontal: 5 }}>
+                        <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                            <Text title={item.name} type="label" lines={1} style={{ color: COLOUR.DARK_GRAY }} />
+                            <Icon name="chevron-right" size={25} color={COLOUR.DARK_GRAY} />
+                        </View>
+                    </TouchableOpacity>
+                })}
+            </View>}
             </View>
+            <View style={{ width: "100%", position: "absolute", bottom: 5, alignItems: "center" }}>
+                {user ?
+                <Button
+                    title="Logout"
+                    onPress={() => logoutAllFunction()}
+                    style={{ width: "55%" }} /> : 
+                    <Button
+                    title="Login"
+                    onPress={() => props.navigation.navigate("LoginScreen")}
+                    style={{ width: "55%" }} /> }
+                <Text title={'Version 1.0.0'} type="ROBOTO_MEDlabelIUM" lines={2} style={{ color: COLOUR.PRIMARY, fontSize: 10, marginTop: 10 }} />
+                <Text title={'Contact developer @ 19smkumar97@gmail.com'} type="label" lines={2} style={{ color: COLOUR.PRIMARY, fontSize: 10 }} />
+            </View>
+
         </View>
     )
 }
@@ -102,57 +141,25 @@ export default function Success(props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLOUR.LIGHTBG
+        backgroundColor: COLOUR.WHITE
     },
-    mainContainer: {
-        flex: 1,
-        backgroundColor: COLOUR.BACKGROUND,
-        borderTopLeftRadius: 50,
-        borderTopRightRadius: 50,
-        paddingTop: 50
-    },
-    cardContainer: {
-        width: "90%",
-        padding: 10,
-        backgroundColor: COLOUR.BACKGROUND,
-        borderRadius: 10,
-        borderTopRightRadius: 0,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginVertical: 5,
-        alignSelf: "center"
-    },
-    imageContainer: {
-        width: 30,
-        height: 30,
-        borderRadius: 5,
-        backgroundColor: COLOUR.LIGHTBG,
-        overflow: "hidden"
-    },
-    dataContainer: {
-        width: "85%",
-        height: 50,
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "space-between",
-        padding: 5,
-        overflow: "hidden"
-    },
-    statusContainer: {
-        width: "30%",
-        height: 30,
-        backgroundColor: COLOUR.CARD_BG,
-        position: "absolute",
-        top: -30,
-        right: 0,
-        borderTopRightRadius: 10,
-        borderTopLeftRadius: 10,
+    profileContainer: {
+        width: "100%",
+        height: "40%",
         alignItems: "center",
         justifyContent: "center"
     },
-    itemImage: {
+    settingsContainer: {
         width: "100%",
-        height: "100%"
+        alignItems: "center",
+        justifyContent: "center",
+        borderTopWidth: 10,
+        borderColor: COLOUR.LIGHTGRAY
+    },
+    optionsContainer: {
+        width: "100%",
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: COLOUR.WHITE
     }
 })

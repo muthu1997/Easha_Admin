@@ -26,6 +26,8 @@ target 'demo' do
 
   pod 'RNCMaskedView', :path => '../node_modules/@react-native-masked-view/masked-view'
 
+  pod 'react-native-splash-screen', :path => '../node_modules/react-native-splash-screen'
+
   target 'demoTests' do
     inherit! :complete
     # Pods for testing

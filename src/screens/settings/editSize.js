@@ -188,7 +188,6 @@ export default function EditSize(props) {
                     errdescription="Unable to load the service. Connectivity issue is there. Please press try again button to load again."
                     positiveTitle="Try again"
                     onPressPositive={() => {
-                        getCategoryList();
                         setErrorComponent(false);
                     }}
                     icon={failure} />
@@ -199,7 +198,6 @@ export default function EditSize(props) {
                     errdescription="Unable to connect. Please check your internet and try again"
                     positiveTitle="Try again"
                     onPressPositive={() => {
-                        getCategoryList();
                         setNetErrorComponent(false);
                     }}
                     icon={net_failure} />

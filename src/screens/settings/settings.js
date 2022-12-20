@@ -20,13 +20,7 @@ const menuData = [
         id: 2,
         item: "Delivery charges",
         icon: "truck-delivery-outline",
-        screen: "PhotoSizeList"
-    },
-    {
-        id: 3,
-        item: "Enable fingerprint login",
-        icon: "fingerprint",
-        screen: "PhotoSizeList"
+        screen: "DeliveryCharge"
     }
 ]
 export default function Success(props) {

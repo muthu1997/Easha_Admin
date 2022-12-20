@@ -1,16 +1,16 @@
-import { STORE_ANALYTICS, STORE_CATEGORY, STORE_SIZE, STORE_CAT_PRODUCT } from "./types";
+import { STORE_ANALYTICS, STORE_CATEGORY, STORE_SIZE, STORE_CAT_PRODUCT, STORE_DELIVERY, STORE_COMPLETED_ORDER, STORE_PENDING_ORDER, STORE_ORDER_DETAILS, UPDATE_PROFILE_DATA } from "./types";
 import { getMethod, uploadImage, putMethod, postMethod } from "../utils/function";
 
-export const storeAnalytics = () => (dispatch) => {
+export const storeAnalytics = (id) => (dispatch) => {
     return new Promise((resolve, reject) => {
-        getMethod("admin/analytics").then(res => {
+        getMethod(`admin/analytics`).then(res => {
             dispatch({
                 type: STORE_ANALYTICS,
                 payload: res.data
             })
-            resolve(res.data);
+            return resolve(res.data);
         }).catch(err => {
-            reject(err);
+            return reject(err);
         })
     })
 }
@@ -22,9 +22,9 @@ export const storeCategory = () => (dispatch) => {
                 type: STORE_CATEGORY,
                 payload: res.data
             })
-            resolve(res.data);
+            return resolve(res.data);
         }).catch(err => {
-            reject(err);
+            return reject(err);
         })
     })
 }
@@ -32,9 +32,9 @@ export const storeCategory = () => (dispatch) => {
 export const uploadImg = (image, name) => {
     return new Promise((resolve, reject) => {
         uploadImage(image, name).then(response => {
-            resolve(response);
+            return resolve(response);
         }).catch(error => {
-            reject(error);
+            return reject(error);
         })
     })
 }
@@ -84,9 +84,79 @@ export const storeSizeList = () => (dispatch) => {
                 type: STORE_SIZE,
                 payload: res.data
             })
-            resolve(res.data);
+            return resolve(res.data);
         }).catch(err => {
-            reject(err);
+            return reject(err);
+        })
+    })
+}
+
+export const setDeliveryList = () => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod("delivery/list/all").then(res => {
+            dispatch({
+                type: STORE_DELIVERY,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const storePendingOrderList = () => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod("order/admin/pending").then(res => {
+            dispatch({
+                type: STORE_PENDING_ORDER,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const storeCompletedOrderList = () => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod("order/admin/delivered").then(res => {
+            dispatch({
+                type: STORE_COMPLETED_ORDER,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const storeOrderDetails = (order_id) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`order/${order_id}`).then(res => {
+            dispatch({
+                type: STORE_ORDER_DETAILS,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const updateProfileData = (_id) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`user/${_id}`).then(res => {
+            dispatch({
+                type: UPDATE_PROFILE_DATA,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
         })
     })
 }

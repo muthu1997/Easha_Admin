@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, SafeAreaView, ToastAndroid } from "react-native";
+import { View, StyleSheet, Modal, TouchableOpacity, ScrollView, Image, SafeAreaView, ToastAndroid, Dimensions } from "react-native";
 import * as COLOUR from "../../../constants/colors";
 import Text from "../../../component/text";
 import Button from "../../../component/button";
@@ -10,29 +10,33 @@ import { launchImageLibrary } from 'react-native-image-picker';
 import RBSheet from "react-native-raw-bottom-sheet";
 import { FlatList } from "react-native-gesture-handler";
 import RNFetchBlob from 'rn-fetch-blob';
-import { postMethod, uploadImage } from "../../../utils/function";
-import moment from "moment";
 import Header from "../../../component/header";
-import { uploadImg, updateMethod, storeCategoryProduct, postMethodFunction } from "../../../redux/actions";
+import { uploadImg, storeCategoryProduct, postMethodFunction } from "../../../redux/actions";
+import { RadioButton } from "react-native-paper";
+import { imageSizeHandler } from "../../../utils/imageHandler";
+import { CropView } from 'react-native-image-crop-tools';
 /* basic imports */
 import { FailureComponent } from "../mascelinous/requestFail";
 import { isInternetConnection } from "../../../utils/checkInternet";
 import { useSelector, useDispatch } from "react-redux";
 import Loader from "../../../component/loader";
 import { failure, net_failure } from "../../../constants/icons";
+const {width, height} = Dimensions.get("screen"); 
 
 export default function SignupFunction(props) {
     const [description, setDescription] = useState("This Painting is 100% handmade made with original 22 carat gold leaves and authentic Jaipur gems by skilled artisans in Thanjavur. Beautiful gift for any auspicious occasion.\n\nMaterials: \n22 Carat Original Gold Foils, \nWater Resistant Plywood, Cloth, \npaints, \nauthentic Jaipur gem stones, \nArabic gum and chalk powder.\n\nFrame: \nTraditional Chettinad Teak Wood frame and Unbreakable fiberglass. Color: Multicolor.\n\nIdeal for:\n· Pooja rooms\n· Home Main Entrance\n· Pooja Doors\n· Waiting Halls\n· Office reception\n· Staircase wall\n· Study room\n· Sit-out area\n· Lobby Area");
     const [name, setName] = useState("");
-    const [height, setHeight] = useState("");
-    const [width, setWidth] = useState("");
-    const [image, setImage] = React.useState("");
-    const [sizeType, setSizeType] = React.useState("");
+    const [image, setImage] = useState("");
+    const [imageType, setImageType] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
-    const [deliveryPrice, setDelivaryPrice] = useState("");
-    const [checked, setChecked] = React.useState(false);
-    const [submitLoader, setSubmitLoader] = React.useState(false);
+    const [isPremium, setIsPremium] = useState("NON-PREMIUM");
+    const [checked, setChecked] = useState(false);
+    const [submitLoader, setSubmitLoader] = useState(false);
     const refRBSheet = useRef();
+    const [cropImage, setCropImage] = useState("");
+    const [isImageSizeExceeds, setIsImageSizeExceeds] = useState("");
+    const [renderCrop, setRenderCrop] = useState(false);
+    const cropRef = useRef();
     /* loader and error components */
     const [showErrorComponent, setErrorComponent] = useState(false)
     const [showNetErrorComponent, setNetErrorComponent] = useState(false)
@@ -42,58 +46,59 @@ export default function SignupFunction(props) {
     const dispatch = useDispatch();
 
     useEffect(() => {
-        if(props.route.params?.catId) {
+        if (props.route.params?.catId) {
             let cat = props.route.params.catId;
             let filteredCatData = categoryList.find(x => x._id === cat);
             setSelectedCategory(filteredCatData)
         }
-    },[])
+    }, [])
 
     async function submitProduct() {
-        if (name === "" || description === "" || height === "" || width === "" || image === "" || sizeType === "" || selectedCategory === "") {
+        if (name === "" || description === "" || image === "" || imageType === "" || selectedCategory === "") {
             ToastAndroid.show("Enter all the fields to continue....", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
         } else {
-            setSubmitLoader(true)
-            await uploadImg(image, name).then(async response => {
-                console.log("comes here")
-                let body = {
-                    "name": name,
-                    "description": description,
-                    "width": Number(width),
-                    "height": Number(height),
-                    "type": sizeType,
-                    "deliveryPrice": 0,
-                    "category": selectedCategory._id,
-                    "image": response,
-                    "owner": "62ebe9823c05919f44021c4c",
-                    "sizeId": "62ebe9823c05919f44021c4c"
-                }
-                return dispatch(postMethodFunction('product/newproduct', body)).then(res => {
-                    setName("");
-                    setImage("");
-                    setWidth("");
-                    setHeight("");
-                    setSizeType("");
-                    setDelivaryPrice("");
-                    setSelectedCategory("");
-                    if (!checked) {
-                        props.navigation.goBack()
+            if (await isInternetConnection()) {
+                setSubmitLoader(true)
+                await uploadImg(image, name).then(async response => {
+                    let body = {
+                        "name": name,
+                        "description": description,
+                        "width": 0,
+                        "height": 0,
+                        "deliveryPrice": 0,
+                        "category": selectedCategory._id,
+                        "image": response,
+                        "owner": "62ebe9823c05919f44021c4c",
+                        "imageType": imageType,
+                        "isPremium": isPremium === "PREMIUM" ? true : false
                     }
-                    dispatch(storeCategoryProduct(props.route.params.catId))
+                    return dispatch(postMethodFunction('product/newproduct', body)).then(res => {
+                        setName("");
+                        setImage("");
+                        setSelectedCategory("");
+                        setIsPremium("NON-PREMIUM");
+                        setImageType("");
+                        if (!checked) {
+                            props.navigation.goBack()
+                        }
+                        dispatch(storeCategoryProduct(props.route.params.catId))
+                        setSubmitLoader(false)
+                        return ToastAndroid.show("Product added.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
+                    }).catch(err => {
+                        setSubmitLoader(false)
+                        console.log("err")
+                        console.log(err)
+                        return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+                    })
+                }).catch(error => {
+                    console.log("error")
+                    console.log(error)
                     setSubmitLoader(false)
-                    return ToastAndroid.show("Product added.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
-                }).catch(err => {
-                    setSubmitLoader(false)
-                    console.log("err")
-                    console.log(err)
-                    return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+                    return ToastAndroid.show("Something went wrong. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
                 })
-            }).catch(error => {
-                console.log("error")
-                console.log(error)
-                setSubmitLoader(false)
-                return ToastAndroid.show("Something went wrong. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
-            })
+            } else {
+                setNetErrorComponent(true);
+            }
         }
     }
 
@@ -104,10 +109,11 @@ export default function SignupFunction(props) {
             mediaType: mediaType,
             takePhotoButtonTitle: "Take a Photo",
             allowsEditing: true,
-            quality: 0.3
+            quality: 1.0
         };
         let options = photooptions;
         launchImageLibrary(options, async (response) => {
+            setIsImageSizeExceeds("");
             if (response.didCancel) {
                 console.log(response.didCancel)
             } else if (response.error) {
@@ -116,11 +122,26 @@ export default function SignupFunction(props) {
                 console.log(response.assets[0].uri)
                 RNFetchBlob.fs.stat(response.assets[0].uri)
                     .then(async (stats) => {
-                        console.log("Size: ", (stats.size / 1024 / 1024))
+                        console.log(response)
+                        console.log("original fileSize", response.assets[0].fileSize)
                         if ((stats.size / 1024 / 1024) > 1) {
-                            alert("Photo not allowed Greater than 1 MB");
+                            console.log("if statement")
+                            setCropImage(`${response.assets[0].uri}`)
+                            imageSizeHandler(response.assets[0].fileSize).then(response => {
+                                console.log("Compress percentage: ",response)
+                                setIsImageSizeExceeds(response);
+                                setRenderCrop(true)
+                            }).catch(error => {
+                                console.log(error)
+                                ToastAndroid.show("Something went wrong, please try with different image.", ToastAndroid.BOTTOM, ToastAndroid.CENTER)
+                            })
                         } else {
-                            setImage(`${response.assets[0].uri}`)
+                            console.log("else statement")
+                            setCropImage(`${response.assets[0].uri}`)
+                            setRenderCrop(true)
+                            // RNFetchBlob.fs.readFile(response.assets[0].uri, 'base64').then(res => 
+                            //     setImage(`data:${response.assets[0].type};base64,${res}`)
+                            //     )
                         }
                     })
                     .catch((err) => {
@@ -130,13 +151,13 @@ export default function SignupFunction(props) {
         });
     };
 
-    const renderOptionButton = (title) => {
+    const renderPremiumButton = (title) => {
         return (
             <Button
-                style={{ width: "49%", marginVertical: 10, backgroundColor: sizeType === title ? COLOUR.PRIMARY : COLOUR.DARK_GRAY }}
+                style={{ width: "49%", marginVertical: 10, backgroundColor: isPremium === title ? COLOUR.GOLD : COLOUR.GRAY }}
                 title={title}
                 onPress={() => {
-                    setSizeType(title)
+                    setIsPremium(title)
                 }}
             />
         )
@@ -162,10 +183,50 @@ export default function SignupFunction(props) {
                     keyExtractor={item => item._id}
                 />
             </View>
-
         )
     }
 
+    function renderOptions(title, value) {
+        return (
+            <View style={styles.optionContainer}>
+                <RadioButton color={COLOUR.PRIMARY} status={imageType === value ? "checked" : "unchecked"} onPress={() => setImageType(value)} />
+                <Text title={title} type="hint" style={{ color: COLOUR.DARK_GRAY }} />
+            </View>
+        )
+    }
+    function renderCropPicker() {
+        return (
+            <View style={styles.cropViewContainer}>
+                {cropImage !== "" ? <CropView
+                    sourceUrl={cropImage ? cropImage : ""}
+                    style={{ width: width, height: height / 1.5 }}
+                    onImageCrop={(res) => {
+                        console.log(res.uri)
+                        console.log("final size ", res)
+                        return RNFetchBlob.fs.stat(`file://${res.uri}`)
+                            .then(async (stats) => {
+                                console.log("stats: ", stats)
+                                console.log("total size: ", (stats.size / 1024 / 1024))
+                                if ((stats.size / 1024 / 1024) > 1) {
+                                    ToastAndroid.show("Image size is too big. Please upload another image.", ToastAndroid.CENTER, ToastAndroid.BOTTOM)
+                                    return setRenderCrop(false);
+                                } else {
+                                    setImage(`file://${res.uri}`);
+                                    return setRenderCrop(false);
+                                }
+                            })
+                    }}
+                    ref={cropRef}
+                    keepAspectRatio
+                    aspectRatio={{ width: 640, height: 640 }}
+                /> : null }
+                <Button title="Crop image" style={{ width: "60%" }} onPress={() => cropRef.current.saveImage(true, isImageSizeExceeds === "" ? 100 : isImageSizeExceeds)} />
+            </View>
+        )
+    }
+    if (renderCrop) {
+        return renderCropPicker();
+    }
     return (
         <SafeAreaView style={styles.container}>
             <Header
@@ -191,13 +252,18 @@ export default function SignupFunction(props) {
                             style={{ height: 150, textAlignVertical: 'top' }}
                             placeholder="Description" />
                         <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between" }}>
-                            
-                        </View>
-                        <View style={{ width: "100%", height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                            {renderOptionButton("CM")}
-                            {renderOptionButton("INCH")}
+
                         </View>
                         <Button title={selectedCategory ? selectedCategory.name : "Select category"} onPress={() => refRBSheet.current.open()} style={[styles.categoryButton, { borderColor: selectedCategory ? COLOUR.PRIMARY : COLOUR.DARK_GRAY }]} textStyle={{ color: COLOUR.BLACK }} />
+                        <View style={styles.inputContainer}>
+                            {renderOptions("Portrait", "PORTRAIT")}
+                            {renderOptions("Landscape", "LANDSCAPE")}
+                            {renderOptions("Square", "SQUARE")}
+                        </View>
+                        <View style={{ width: "100%", height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                            {renderPremiumButton("PREMIUM")}
+                            {renderPremiumButton("NON-PREMIUM")}
+                        </View>
                         <View style={styles.termsContainer}>
                             <Checkbox
                                 status={checked ? 'checked' : 'unchecked'}
@@ -209,12 +275,12 @@ export default function SignupFunction(props) {
                             <Text title="Continue adding product." type="paragraph" style={{ width: "90%" }} />
                         </View>
                         <Button title="Create" loader={submitLoader} onPress={() => {
-                            if(!submitLoader) {
+                            if (!submitLoader) {
                                 submitProduct()
-                            }else {
+                            } else {
                                 ToastAndroid.show("Please wait. Product data is uploading to server.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
                             }
-                            }} style={[styles.buttonStyle, { marginBottom: 20 }]} textStyle={{ color: COLOUR.WHITE }} />
+                        }} style={[styles.buttonStyle, { marginBottom: 20 }]} textStyle={{ color: COLOUR.WHITE }} />
                     </View>
                 </ScrollView>
                 <RBSheet
@@ -242,7 +308,6 @@ export default function SignupFunction(props) {
                         positiveTitle="Try again"
                         onPressPositive={() => {
                             setLoading(true);
-                            getDashboardAnalytics();
                             setErrorComponent(false);
                         }}
                         icon={failure} />
@@ -254,7 +319,6 @@ export default function SignupFunction(props) {
                         positiveTitle="Try again"
                         onPressPositive={() => {
                             setLoading(true);
-                            getDashboardAnalytics();
                             setNetErrorComponent(false);
                         }}
                         icon={net_failure} />
@@ -324,5 +388,25 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         paddingHorizontal: "10%"
+    },
+    optionContainer: {
+        backgroundColor: COLOUR.WHITE,
+        borderRadius: 10,
+        alignItems: "center",
+        flexDirection: "row",
+        justifyContent: "space-between"
+    },
+    inputContainer: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        alignSelf: "center"
+    },
+    cropViewContainer: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: COLOUR.BLACK
     }
 })

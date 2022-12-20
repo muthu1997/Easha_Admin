@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, Dimensions, FlatList, ActivityIndicator, Linking } from "react-native";
+import { View, StyleSheet, Dimensions, FlatList, Image, ToastAndroid, Modal } from "react-native";
 import * as COLOUR from "../../../constants/colors";
 import Header from "../../../component/header";
 import { check } from "../../../constants/icons";
@@ -10,46 +10,45 @@ import Button from "../../../component/button";
 import moment from "moment";
 import { TouchableOpacity } from "react-native-gesture-handler";
 const { width } = Dimensions.get("screen")
+import { storePendingOrderList, storeCompletedOrderList } from "../../../redux/actions";
+/* basic imports */
+import { FailureComponent } from "../mascelinous/requestFail";
+import { isInternetConnection } from "../../../utils/checkInternet";
+import { useDispatch, useSelector } from "react-redux";
+import Loader from "../../../component/loader";
+import { failure, net_failure } from "../../../constants/icons";
 
 export default function Success(props) {
-    const [pendingOrders, setPendingOrders] = useState([]);
-    const [completedOrders, setCompletedOrders] = useState([]);
     const [getOrderList, setOrderList] = useState([]);
-    const [loader, setLoader] = useState(true);
     const [isPending, setIsPending] = useState(true);
+    /* loader and error components */
+    const [showErrorComponent, setErrorComponent] = useState(false)
+    const [showNetErrorComponent, setNetErrorComponent] = useState(false)
+    const [loading, setLoading] = useState(true);
+    const dispatch = useDispatch();
+    const pendingOrderList = useSelector(state => state.pendingOrderList)
+    const completedOrderList = useSelector(state => state.completedOrderList)
+
     useEffect(() => {
         getPendingOrders();
         getCompletedOrders();
     }, [])
 
-    function refreshFunction() {
-        setLoader(true)
-        getPendingOrders();
-        getCompletedOrders();
-    }
-
     function getPendingOrders() {
-        getMethod('order/admin/pending', res => {
-            if (res !== "error") {
-                setPendingOrders(res.data);
-                setOrderList(res.data);
-                setLoader(false)
-            } else {
-                setLoader(false)
-                alert("Problem while getting pending orders");
-            }
+        setLoading(true)
+        dispatch(storePendingOrderList()).then(res => {
+                setOrderList(res)
+        }).catch(error => {
+            ToastAndroid.show("Something went wrong. please go back and try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG);
+            setLoading(false);
         })
     }
 
     function getCompletedOrders() {
-        getMethod('order/admin/delivered', res => {
-            if (res !== "error") {
-                setCompletedOrders(res.data);
-                setLoader(false)
-            } else {
-                setLoader(false)
-                alert("Problem while getting pending orders");
-            }
+        dispatch(storeCompletedOrderList()).then(res => {
+            setLoading(false);
+        }).catch(error => {
+            ToastAndroid.show("Something went wrong. please go back and try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG);
         })
     }
 
@@ -58,39 +57,42 @@ export default function Success(props) {
         if (item.status !== "PROCESSING" && item.status !== "DELIVERED") { item.statusCode = 1 }
         if (item.status === "DELIVERED") { item.statusCode = 2 }
         return (
-            <TouchableOpacity activeOpacity={0.8} onPress={()=>props.navigation.navigate("OrderDetails",{ orderData: item })} style={styles.cardContainer}>
-                <View style={styles.imageContainer}>
-                    <Text type="heading" title={item.orderItems.length} />
-                    <Text type="paragraph" title={`${item.orderItems.length > 1 ? 'items' : 'item'}`} style={{ color: COLOUR.BLACK }} />
-                </View>
-                <View style={styles.dataContainer}>
-                    <View>
-                        <Text type="heading" title={item.user.name} />
-                        <Text type="paragraph" title={`Ordered on ${moment(item.dateOrdered).format("DD MMM YYYY")}`} style={{ color: COLOUR.DARK_GRAY }} />
-                        <Text type="paragraph" title={`Paid: Rs.${item.amountPaid}`} style={{ color: COLOUR.GREEN }} />
-                        <Text type="paragraph" title={`Pending: Rs.${item.amountDue}`} style={{ color: COLOUR.RED }} />
-                        <Text type="paragraph" title={`Delivery: Rs.${item.deliveryPrice}`} style={{ color: COLOUR.CYON }} />
-                        <View style={{width: "100%", height: 2, backgroundColor: COLOUR.GRAY, alignSelf: "center"}} />
-                        <Text type="paragraph" title={`Total Worth: Rs.${item.totalPrice}`} style={{ color: COLOUR.PRIMARY, fontSize: 16 }} />
+            <TouchableOpacity activeOpacity={0.8} onPress={() => props.navigation.navigate("OrderDetails", { orderData: item })} style={styles.cardContainer}>
+                <View style={styles.itemTop}>
+                    <View style={styles.dataContainer}>
+                        <View style={styles.imageContainer}>
+                            <Image source={{ uri: item.orderItems[0].product?.image }} style={styles.itemImage} resizeMode="contain" />
+                        </View>
+                        <View style={styles.itemHeader}>
+                            {item.orderItems.map((item1, index) => {
+                                return index < 2 ? <View key={index}><Text type="label" title={item1.product?.name} /></View> : null
+                            })}
+                            <Text type="paragraph" title={`${item.orderItems.length}${item.orderItems.length > 1 ? 'items' : 'item'}`} style={{ color: COLOUR.DARK_GRAY }} />
+                        </View>
                     </View>
-                    {item.status !== "DELIVERED" ?
-                    <View style={styles.buttonContainer}>
-                        <TouchableOpacity 
-                        onPress={async() => {
-                            await Linking.openURL(`tel:${item.user.country_code + item.phone}`)
-                        }}
-                        style={styles.callBtn} 
-                        activeOpacity={0.8}>
-                            <Icon name="phone" size={25} color={COLOUR.WHITE} />
-                        </TouchableOpacity>
-                    </View> : null }
                 </View>
-
-                <View style={[styles.statusContainer, { borderTopWidth: 2, borderTopColor: item.statusCode === 0 ? COLOUR.RED : item.statusCode === 1 ? COLOUR.PRIMARY : COLOUR.GREEN }]}>
-                    <Text type="label" title={item.status} style={{ fontSize: 12, color: item.statusCode === 0 ? COLOUR.RED : item.statusCode === 1 ? COLOUR.PRIMARY : COLOUR.GREEN }} />
+                <View style={styles.itemBottom}>
+                    <View style={[styles.dataContainer, { width: "100%" }]}>
+                            <Text type="paragraph" title={`Ordered on ${moment(item.dateOrdered).format("DD MMM YY")}`} style={{ color: COLOUR.BLACK }} />
+                    </View>
+                    <View style={[styles.dataContainer, { width: "100%" }]}>
+                        <Text type="paragraph" title={"Order ID"} style={{ color: COLOUR.DARK_GRAY }} />
+                        <Text type="paragraph" title={item.orderId} style={{ color: COLOUR.BLACK }} />
+                    </View>
+                    <View style={[styles.dataContainer, { width: "100%" }]}>
+                        <Text type="paragraph" title={"Total Amount"} style={{ color: COLOUR.DARK_GRAY }} />
+                        <Text type="paragraph" title={`₹${item.totalPrice}`} style={{ color: COLOUR.GREEN }} />
+                    </View>
+                    <View style={[styles.dataContainer, { width: "100%" }]}>
+                        <Text type="paragraph" title={"Status"} style={{ color: COLOUR.DARK_GRAY }} />
+                        <Text type="paragraph" title={item.status} style={{ color: item.status === "PROCESSING" ? COLOUR.ORANGE_DARK : item.status === "INPROCESS" ? COLOUR.PRIMARY : item.status === "PAYMENT" ? COLOUR.CYON : item.status === "SHIPMENT" ? COLOUR.SECONDARY : COLOUR.GREEN }} />
+                    </View>
                 </View>
             </TouchableOpacity>
         )
+    }
+    if (loading) {
+        return <View style={styles.loaderContainer}><Loader /></View>
     }
     return (
         <View style={styles.container}>
@@ -98,29 +100,52 @@ export default function Success(props) {
                 title="Order List"
             />
             <View style={styles.optionButtonContainer}>
-                <TouchableOpacity activeOpacity={0.8} onPress={() => {setIsPending(true);setOrderList(pendingOrders);}} style={[styles.optionButton, {borderColor: isPending ? COLOUR.WHITE : COLOUR.PRIMARY}]}>
-                        <Text type="paragraph" title={`Pending`} style={{ color: COLOUR.WHITE, fontSize: 18 }} />
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { setIsPending(true); setOrderList(pendingOrderList); }} style={[styles.optionButton, { borderColor: isPending ? COLOUR.WHITE : COLOUR.PRIMARY }]}>
+                    <Text type="paragraph" title={`Pending`} style={{ color: COLOUR.WHITE, fontSize: 18 }} />
                 </TouchableOpacity>
-                <TouchableOpacity activeOpacity={0.8} onPress={() => {setIsPending(false);setOrderList(completedOrders);}} style={[styles.optionButton, {borderColor: !isPending ? COLOUR.WHITE : COLOUR.PRIMARY}]}>
-                        <Text type="paragraph" title={`Completed`} style={{ color: COLOUR.WHITE, fontSize: 18 }} />
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { setIsPending(false); setOrderList(completedOrderList); }} style={[styles.optionButton, { borderColor: !isPending ? COLOUR.WHITE : COLOUR.PRIMARY }]}>
+                    <Text type="paragraph" title={`Completed`} style={{ color: COLOUR.WHITE, fontSize: 18 }} />
                 </TouchableOpacity>
             </View>
-            {loader ? <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                        <ActivityIndicator color={COLOUR.PRIMARY} size="large" /> 
-                    </View> :
             <View style={styles.mainContainer}>
                 <FlatList
-                    data={getOrderList}
+                    data={isPending ? pendingOrderList : completedOrderList}
                     renderItem={({ item, index }) => {
                         return (
                             renderCard(item)
                         )
                     }}
-                    ListHeaderComponent={() => {return <View style={{width: "100%", height: 60, alignItems:"center", justifyContent: "center"}}>
-                        <Button title="Refresh" onPress={() => refreshFunction()} />
-                    </View>}}
+                    ListEmptyComponent={() => {
+                        return <View style={{flex: 1, alignItems:"center", justifyContent: "center"}}>
+                        <Text type="paragraph" title={"No orders found."} style={{ color: COLOUR.DARK_GRAY }} />
+                        </View>
+                    }}
                     keyExtractor={item => item._id} />
-            </View> }
+            </View>
+            <Modal visible={showErrorComponent}>
+                <FailureComponent
+                    errtitle="Oooops!"
+                    errdescription="Unable to load the service. Connectivity issue is there. Please press try again button to load again."
+                    positiveTitle="Try again"
+                    onPressPositive={() => {
+                        setLoading(true);
+                        getProductList(props.route.params.catId);
+                        setErrorComponent(false);
+                    }}
+                    icon={failure} />
+            </Modal>
+            <Modal visible={showNetErrorComponent}>
+                <FailureComponent
+                    errtitle="Oooops!"
+                    errdescription="Unable to connect. Please check your internet and try again"
+                    positiveTitle="Try again"
+                    onPressPositive={() => {
+                        setLoading(true);
+                        getProductList(props.route.params.catId);
+                        setNetErrorComponent(false);
+                    }}
+                    icon={net_failure} />
+            </Modal>
         </View>
     )
 }
@@ -128,31 +153,25 @@ export default function Success(props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: COLOUR.CARD_BG,
     },
     mainContainer: {
         flex: 1,
-        backgroundColor: COLOUR.BACKGROUND,
+        backgroundColor: COLOUR.CARD_BG,
     },
     cardContainer: {
-        width: "90%",
+        width: "100%",
         padding: 10,
-        backgroundColor: COLOUR.CARD_BG,
-        borderRadius: 10,
-        borderTopRightRadius: 0,
-        flexDirection: "row",
+        backgroundColor: COLOUR.WHITE,
         alignItems: "center",
-        justifyContent: "space-between",
-        marginVertical: 5,
-        marginTop: 30,
-        alignSelf: "center"
+        marginBottom: 5,
+        alignSelf: "center",
+        overflow: "hidden"
     },
     imageContainer: {
-        width: 50,
-        height: 75,
-        borderWidth: 1,
-        borderColor: COLOUR.PRIMARY,
+        width: Dimensions.get("screen").width / 5,
+        height: Dimensions.get("screen").width / 5,
         borderRadius: 5,
-        backgroundColor: COLOUR.LIGHTBG,
         overflow: "hidden",
         alignItems: "center",
         justifyContent: "center"
@@ -179,7 +198,7 @@ const styles = StyleSheet.create({
     },
     buttonContainer: {
         flex: 1,
-        alignItems:"center",
+        alignItems: "center",
         justifyContent: "space-around",
         flexDirection: "row"
     },
@@ -205,5 +224,30 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         borderBottomWidth: 5
-    }
+    },
+    loaderContainer: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    itemImage: {
+        width: "100%",
+        height: "100%"
+    },
+    itemHeader: {
+        width: "100%",
+        height: Dimensions.get("screen").width / 5,
+        paddingHorizontal: 5
+    },
+    itemTop: {
+        width: "100%",
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between"
+    },
+    itemBottom: {
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "center"
+    },
 })

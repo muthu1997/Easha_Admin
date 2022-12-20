@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { View, StyleSheet, SafeAreaView, TouchableOpacity, Image, ToastAndroid, Modal } from "react-native";
+import React, { useState, useEffect, useRef } from "react";
+import { View, StyleSheet, SafeAreaView, TouchableOpacity, Image, ToastAndroid, Modal, Alert, Dimensions } from "react-native";
 import * as COLOUR from "../../../constants/colors";
 import Text from "../../../component/text";
 import Button from "../../../component/button";
@@ -9,19 +9,27 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons"
 import { launchImageLibrary } from 'react-native-image-picker';
 import RNFetchBlob from 'rn-fetch-blob';
 import { uploadImg, updateMethod, storeCategory, postMethodFunction } from "../../../redux/actions";
+import { imageCompressor } from "../../../utils/imageHandler";
+import { CropView } from 'react-native-image-crop-tools';
+import {imageSizeHandler} from "../../../utils/imageHandler";
 /* basic imports */
 import { FailureComponent } from "../mascelinous/requestFail";
 import { isInternetConnection } from "../../../utils/checkInternet";
 import { useDispatch } from "react-redux";
 import { failure, net_failure } from "../../../constants/icons";
 import Header from "../../../component/header";
+const {width, height} = Dimensions.get("screen"); 
 
 export default function SignupFunction(props) {
     const [name, setName] = useState("");
     const [loader, setLoader] = useState(false);
     const [checked, setChecked] = React.useState(false);
+    const [isImageSizeExceeds, setIsImageSizeExceeds] = React.useState("");
     const [image, setImage] = React.useState("");
+    const [cropImage, setCropImage] = React.useState("");
     const [id, setId] = React.useState("");
+    const [renderCrop, setRenderCrop] = React.useState(false);
+    const cropRef = useRef();
     /* loader and error components */
     const [showErrorComponent, setErrorComponent] = useState(false)
     const [showNetErrorComponent, setNetErrorComponent] = useState(false)
@@ -46,10 +54,11 @@ export default function SignupFunction(props) {
             mediaType: mediaType,
             takePhotoButtonTitle: "Take a Photo",
             allowsEditing: true,
-            quality: 0.3
+            quality: 1.0
         };
         let options = photooptions;
         launchImageLibrary(options, async (response) => {
+            setIsImageSizeExceeds("");
             if (response.didCancel) {
                 console.log(response.didCancel)
             } else if (response.error) {
@@ -58,11 +67,21 @@ export default function SignupFunction(props) {
                 console.log(response.assets[0].uri)
                 RNFetchBlob.fs.stat(response.assets[0].uri)
                     .then(async (stats) => {
-                        console.log("Size: ", (stats.size / 1024 / 1024))
+                        console.log(response)
                         if ((stats.size / 1024 / 1024) > 1) {
-                            alert("Photo not allowed Greater than 1 MB");
+                            console.log("original fileSize", response.assets[0].fileSize)
+                            setCropImage(`${response.assets[0].uri}`)
+                            imageSizeHandler(response.assets[0].fileSize).then(response => {
+                                console.log("Compress percentage: ",response)
+                                setIsImageSizeExceeds(response);
+                                setRenderCrop(true)
+                            }).catch(error => {
+                                console.log(error)
+                                ToastAndroid.show("Something went wrong, please try with different image.", ToastAndroid.BOTTOM, ToastAndroid.CENTER)
+                            })
                         } else {
-                            setImage(`${response.assets[0].uri}`)
+                            setCropImage(`${response.assets[0].uri}`)
+                            setRenderCrop(true)
                             // RNFetchBlob.fs.readFile(response.assets[0].uri, 'base64').then(res => 
                             //     setImage(`data:${response.assets[0].type};base64,${res}`)
                             //     )
@@ -143,6 +162,40 @@ export default function SignupFunction(props) {
         }
     }
 
+    function renderCropPicker() {
+        return (
+            <View style={styles.cropViewContainer}>
+            <CropView
+                sourceUrl={cropImage}
+                style={{width: width, height: height / 1.5}}
+                onImageCrop={(res) => {
+                    console.log(res.uri)
+                    console.log("final size ",res)
+                    RNFetchBlob.fs.stat(`file://${res.uri}`)
+                    .then(async (stats) => {
+                        console.log("stats: ",stats)
+                        console.log("total size: ",(stats.size / 1024 / 1024))
+                        if ((stats.size / 1024 / 1024) > 1) {
+                            ToastAndroid.show("Image size is too big. Please upload another image.", ToastAndroid.CENTER, ToastAndroid.BOTTOM)
+                            return setRenderCrop(false);
+                        }else {
+                            setImage(`file://${res.uri}`);
+                            return setRenderCrop(false);
+                        }
+                    })
+                }}
+                ref={cropRef}
+                keepAspectRatio
+                aspectRatio={{ width: 640, height: 640 }}
+            />
+            <Button title="Crop image" style={{width: "60%"}} onPress={() => cropRef.current.saveImage(true, isImageSizeExceeds === "" ? 100 : isImageSizeExceeds)} />
+            </View>
+        )
+    }
+
+    if(renderCrop) {
+        return renderCropPicker();
+    }
     return (
         <SafeAreaView style={styles.container}>
             <Header
@@ -152,7 +205,7 @@ export default function SignupFunction(props) {
             />
             <View style={styles.mainContainer}>
                 <TouchableOpacity onPress={() => imageHandler()} activeOpacity={9} style={[styles.imageButton, { borderWidth: !image ? 2 : 0 }]} >
-                    {!image ? <Icon name="plus" size={50} color={COLOUR.PRIMARY} /> : <Image source={{ uri: image }} resizeMode="cover" style={{ width: "100%", height: "100%" }} />}
+                    {!image ? <Icon name="plus" size={50} color={COLOUR.PRIMARY} /> : <Image source={{ uri: image }} resizeMode="contain" style={{ width: "100%", height: "100%" }} />}
                 </TouchableOpacity>
                 <View style={styles.formContainer}>
                     <Input
@@ -252,5 +305,11 @@ const styles = StyleSheet.create({
         overflow: "hidden",
         alignItems: "center",
         justifyContent: "center"
+    },
+    cropViewContainer: {
+        flex: 1,
+        alignItems:"center",
+        justifyContent: "center",
+        backgroundColor: COLOUR.BLACK
     }
 })

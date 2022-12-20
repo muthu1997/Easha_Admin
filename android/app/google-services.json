@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "137041109428",
+    "project_id": "handmadepaints-admin",
+    "storage_bucket": "handmadepaints-admin.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:137041109428:android:e5b1d48f94b5f2a6cd12e1",
+        "android_client_info": {
+          "package_name": "com.handpaints.ecom"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "137041109428-gopoie0sghqr20jeiichftqho7o275at.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBopZS16Ns9UX6DYuwXQjHcy1EbgEvPlQM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "137041109428-gopoie0sghqr20jeiichftqho7o275at.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -46,11 +46,10 @@ export default function Success(props) {
 
     const deleteProduct = () => {
         setDeleteBtnLoader(true)
-        deleteMethod(`product/${getSelectedProduct._id}`, response => {
+        deleteMethod(`product/${getSelectedProduct._id}`).then(response => {
             refRBSheet.current.close()
-            if (response !== "error") {
-                let id = categoryList[0]._id;
-                getProductList(id);
+            if (response !== -1) {
+                getProductList(props.route.params.catId);
             } else {
                 ToastAndroid.show("Something went wrong. please go back and try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG);
             }
@@ -84,7 +83,9 @@ export default function Success(props) {
                         <Text type="hint" title={item.description} lines={2} style={{ color: COLOUR.DARK_GRAY, fontWeight: "500" }} />
                     </View>
                     <View style={{ height: 40, width: "100%", flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                        <Text type="label" title={`Rs ${item.price}`} style={{ color: COLOUR.PRIMARY, marginRight: 10 }} />
+                        <View style={{flexDirection: "row"}}>
+                            <View style={[styles.premiumContainer,{backgroundColor: item.isPremium ? COLOUR.GOLD : COLOUR.PRIMARY}]} />
+                        </View>
                         <View style={{ flexDirection: "row" }}>
                             {renderIconButton("pencil", COLOUR.GREEN, item)}
                             {renderIconButton("delete", COLOUR.RED, item)}
@@ -98,7 +99,7 @@ export default function Success(props) {
     const renderDeleteAlert = () => {
         return (
             <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-                <Text type="heading" title={"Are you sure, want to delete this product?"} style={{ color: COLOUR.PRIMARY, fontWeight: "500" }} />
+                <Text type="label" title={"Are you sure, want to delete this product?"} style={{ color: COLOUR.PRIMARY, fontWeight: "500" }} />
                 <View style={{ flexDirection: "row", marginTop: 25 }}>
                     <Button onPress={() => deleteProduct()} title="Delete" loader={deleteBtnLoader} style={{ width: "40%", margin: 5, backgroundColor: COLOUR.RED }} />
                     <Button onPress={() => refRBSheet.current.close()} title="Cancel" style={{ width: "40%", margin: 5 }} />
@@ -155,7 +156,7 @@ export default function Success(props) {
                     positiveTitle="Try again"
                     onPressPositive={() => {
                         setLoading(true);
-                        getCategoryList();
+                        getProductList(props.route.params.catId);
                         setErrorComponent(false);
                     }}
                     icon={failure} />
@@ -167,7 +168,7 @@ export default function Success(props) {
                     positiveTitle="Try again"
                     onPressPositive={() => {
                         setLoading(true);
-                        getCategoryList();
+                        getProductList(props.route.params.catId);
                         setNetErrorComponent(false);
                     }}
                     icon={net_failure} />
@@ -237,5 +238,10 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: "center",
         justifyContent: "center"
+    },
+    premiumContainer: {
+        width: 10,
+        height: 10,
+        borderRadius: 5
     }
 })

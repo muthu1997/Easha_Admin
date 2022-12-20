@@ -6,11 +6,11 @@
  * @flow strict-local
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StatusBar,
   Image,
-  StyleSheet, NativeModules
+  StyleSheet, View, DeviceEventEmitter
 } from 'react-native';
 import 'react-native-gesture-handler';
 import { NavigationContainer } from '@react-navigation/native';
@@ -19,7 +19,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import * as COLOUR from "./constants/colors";
 import { home, home_hide, cat_hide, cat_vis, set_hide, set_vis, order_hide, order_vis, acc_hide, acc_vis } from "./constants/icons";
 import NewProduct from "./src/screens/product/newProduct";
-import EditProduct from "./src/screens/product/editProduct";
+import updateProducts from "./src/screens/product/editProduct";
 import AddCategory from "./src/screens/product/category";
 import CategoryList from "./src/screens/product/categoryList";
 import Home from "./src/screens/dashboard/dashboard";
@@ -27,13 +27,20 @@ import ProductList from "./src/screens/product/productList";
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from "redux";
 import thunk from 'redux-thunk'
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Store from "./redux/store";
+import * as STRINGS from "./constants/strings";
+import messaging, { firebase } from '@react-native-firebase/messaging';
+import PushNotification from "react-native-push-notification";
 //Orders Tab
 import OrderList from "./src/screens/orders/orderList";
 import OrderData from "./src/screens/orders/orderDetails";
 //Account Tab
 import Account from "./src/screens/account/account";
 import Profile from "./src/screens/account/profile";
+import Chat from "./src/screens/account/chat";
+import TandC from "./src/screens/account/tandc";
+import EditProf from "./src/screens/account/editProfile";
 //Delivery
 import DeliveryPrice from './src/screens/delivery/deliveryList';
 //Settings
@@ -41,17 +48,83 @@ import Settings from "./src/screens/settings/settings";
 import PhotoSizeList from "./src/screens/settings/photoSizeList";
 import AddSize from "./src/screens/settings/addSize";
 import EditSize from "./src/screens/settings/editSize";
+//Login
+import Login from "./src/screens/login/index";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const configureStore = createStore(Store, applyMiddleware(thunk));
 export default function App() {
+  const [renderHome, setRenderHome] = useState("");
+  useEffect(() => {
+    getLocalData(false);
+    const listenForLogout = DeviceEventEmitter.addListener("LOGOUT", res => {
+      getLocalData(true);
+    })
+    requestUserPermission();
+    const unsubscribe = messaging().onMessage(async remoteMessage => {
+      PushNotification.localNotification({
+        title: remoteMessage.notification.title,
+        message: remoteMessage.notification.body,
+        channelId: "fcm_fallback_notification_channel",
+      });
+    });
+
+    return () => { listenForLogout.remove(); unsubscribe }
+  }, [])
+
+  async function requestUserPermission() {
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
+  
+    if (enabled) {
+      console.log('Authorization status:', authStatus);
+      getFcmToken();
+    }
+  }
+
+  messaging().onNotificationOpenedApp(async (remoteMessage) => {
+    if (remoteMessage) {
+      console.log("onNotificationOpenedApp ", remoteMessage);
+    }
+  })
+
+  messaging().setBackgroundMessageHandler(
+    async (remoteMessage) => {
+      if (remoteMessage) {
+        console.log("setBackgroundMessageHandler ", remoteMessage);
+      }
+    })
+
+  const getFcmToken = () => {
+    messaging().getToken().then((fcmToken) => {
+      global.fcmtoken = fcmToken;
+      console.log(fcmToken)
+    });
+  }
+  async function getLocalData(dummyData) {
+    if (dummyData) {
+      setRenderHome("");
+    }
+    let userId = await AsyncStorage.getItem(STRINGS.UID);
+    if (userId) {
+      let token = await AsyncStorage.getItem(STRINGS.TOKEN);
+      if (token) {
+        global.headers = true
+        global.token = token;
+        setRenderHome(true);
+      }
+    } else {
+      setRenderHome(false);
+    }
+  }
 
   function HomeTab() {
     return (
       <Stack.Navigator>
         <Stack.Screen name="Home" component={Home} options={{ headerShown: false }} />
-        <Stack.Screen name="DeliveryCharge" component={DeliveryPrice} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -68,11 +141,11 @@ export default function App() {
   function CategoryTab() {
     return (
       <Stack.Navigator>
-      <Stack.Screen name="CategoryList" component={CategoryList} options={{ headerShown: false }} />
-      <Stack.Screen name="NewProduct" component={NewProduct} options={{ headerShown: false }} />
-      <Stack.Screen name="EditProduct" component={EditProduct} options={{ headerShown: false }} />
-      <Stack.Screen name="AddCategory" component={AddCategory} options={{ headerShown: false }} />
-      <Stack.Screen name="productlist" component={ProductList} options={{ headerShown: false }} />
+        <Stack.Screen name="CategoryList" component={CategoryList} options={{ headerShown: false }} />
+        <Stack.Screen name="NewProduct" component={NewProduct} options={{ headerShown: false }} />
+        <Stack.Screen name="EditProduct" component={updateProducts} options={{ headerShown: false }} />
+        <Stack.Screen name="AddCategory" component={AddCategory} options={{ headerShown: false }} />
+        <Stack.Screen name="productlist" component={ProductList} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -82,6 +155,10 @@ export default function App() {
       <Stack.Navigator>
         <Stack.Screen name="Accounts" component={Account} options={{ headerShown: false }} />
         <Stack.Screen name="Profile" component={Profile} options={{ headerShown: false }} />
+        <Stack.Screen name="LoginScreen" component={LoginTab} options={{ headerShown: false }} />
+        <Stack.Screen name="ChatScreen" component={Chat} options={{ headerShown: false }} />
+        <Stack.Screen name="Terms" component={TandC} options={{ headerShown: false }} />
+        <Stack.Screen name="EditProfile" component={EditProf} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -93,6 +170,16 @@ export default function App() {
         <Stack.Screen name="PhotoSizeList" component={PhotoSizeList} options={{ headerShown: false }} />
         <Stack.Screen name="AddSize" component={AddSize} options={{ headerShown: false }} />
         <Stack.Screen name="EditSize" component={EditSize} options={{ headerShown: false }} />
+        <Stack.Screen name="DeliveryCharge" component={DeliveryPrice} options={{ headerShown: false }} />
+      </Stack.Navigator>
+    );
+  }
+
+  function LoginTab() {
+    return (
+      <Stack.Navigator>
+        <Stack.Screen name="LoginScreen" component={Login} options={{ headerShown: false }} />
+        <Stack.Screen name="Homescreen" component={BottomTab} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -135,12 +222,17 @@ export default function App() {
       </Tab.Navigator>
     );
   }
-
+  if (renderHome === "") {
+    return <View style={{ flex: 1 }} />
+  }
   return (
     <Provider store={configureStore}>
       <NavigationContainer>
         <StatusBar backgroundColor={COLOUR.PRIMARY} />
-        {BottomTab()}
+        <Stack.Navigator>
+          {!renderHome ? <Stack.Screen name="LoginScreen" component={LoginTab} options={{ headerShown: false }} /> :
+            <Stack.Screen name="Homescreen" component={BottomTab} options={{ headerShown: false }} />}
+        </Stack.Navigator>
       </NavigationContainer>
     </Provider>
   );

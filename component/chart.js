@@ -16,14 +16,14 @@ export function LineChartFunction(props) {
             }}
             width={Dimensions.get("screen").width - 25} // from react-native
             height={220}
-            yAxisLabel="$"
             yAxisSuffix="k"
+            yLabelsOffset={5}
             yAxisInterval={1} // optional, defaults to 1
             chartConfig={{
                 backgroundColor: COLOUR.WHITE,
                 backgroundGradientFrom: COLOUR.WHITE,
                 backgroundGradientTo: COLOUR.WHITE,
-                decimalPlaces: 2, // optional, defaults to 2dp
+                decimalPlaces: 0, // optional, defaults to 2dp
                 color: (opacity = 1) => COLOUR.PRIMARY,
                 labelColor: (opacity = 1) => COLOUR.BLACK,
                 style: {

@@ -26,7 +26,7 @@ const Header = props => {
 
         {props.name ? <View style={{ width: "100%", paddingVertical: 20, justifyContent: "center" }}>
           <View>
-            <Text title="Easha Arts" type="title" style={{ fontSize: 20, color: COLOUR.WHITE }} />
+            <Text title="Handcrafts" type="title" style={{ fontSize: 20, color: COLOUR.WHITE }} />
           </View>
         </View> : null}
         {props.bell ?

@@ -8,7 +8,7 @@ const TitleContainer = props => {
   return (
       <View style={[styles.headerContainer, props.style]}>
           <View style={{flexDirection: "row", alignItems:'center', justifyContent:'space-between', width: "100%"}}>
-            <Text title={props.title} type="heading" style={{fontSize: 20}} />
+            <Text title={props.title} type="label" style={{fontSize: 16}} />
             {props.secondaryTitle ? <Text onPress={() => props.onViewAll ? props.onViewAll() : null} title={props.secondaryTitle} type="label" style={{color: COLOUR.GRAY, fontWeight: "500"}} /> : null }
             {props.addButton ? <TouchableOpacity activeOpacity={0.8} style={styles.addButton}>
               <Icon name="plus" size={20} color={COLOUR.WHITE} />
@@ -24,8 +24,7 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems:'center',
         justifyContent:'space-between',
-        padding: 20,
-        marginVertical: 5
+        padding: 20
   },
   addButton: {
     width: 35,

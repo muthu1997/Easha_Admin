@@ -1,15 +1,19 @@
 import axios from 'axios';
-import RNFetchBlob from 'rn-fetch-blob';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {API} from "../constants/config";
+import * as STRINGS from "../constants/strings";
 
+const header1 = {
+    'Content-Type': 'application/json',
+    "Accept": "application/json"
+} 
 export async function postMethod(url, body) {
+    if(global.headers === true) {
+        header1.Authorization = "Bearer "+ await AsyncStorage.getItem(STRINGS.TOKEN);
+    }
     return new Promise(async (resolve, reject) => {
-        const headers = {
-            'Content-Type': 'application/json',
-            "Accept": "application/json"
-        }
         return await axios
-            .post(`${API}${url}`, body, headers)
+            .post(`${API}${url}`, body, {headers: header1})
             .then((res) => {
                 if(res.data.success) {
                     return resolve(res.data);
@@ -17,53 +21,49 @@ export async function postMethod(url, body) {
                     return reject(-1)
                 }
             })
-            .catch((error) => {console.log("err: ",error.response.data);return reject(-1)});
+            .catch((error) => {console.log("err: ",error.response);return reject(error)});
     })
 }
 
-export function getMethod(url) {
+export async function getMethod(url) {
+    if(global.headers === true) {
+        header1.Authorization = "Bearer "+ await AsyncStorage.getItem(STRINGS.TOKEN);
+    }
     return new Promise(async (resolve, reject) => {
-        const headers = {
-            'Content-Type': "application/json"
-        }
         return await axios
-            .get(`${API}${url}`, headers)
+            .get(`${API}${url}`, {headers:  header1})
             .then((res) => {
                 return resolve(res.data);
-                console.log(res)
             })
-            .catch((error) => {
-                console.log(error)
-                return reject(-1)
-            });
+            .catch((error) => {return reject(-1)});
     })
 }
 
-export function deleteMethod(url, callback) {
+export async function deleteMethod(url, callback) {
+    if(global.headers === true) {
+        header1.Authorization = "Bearer "+ await AsyncStorage.getItem(STRINGS.TOKEN);
+    }
     return new Promise(async (resolve, reject) => {
-        const headers = {
-            'Content-Type': "application/json"
-        }
         return await axios
-            .delete(`${API}${url}`, headers)
+            .delete(`${API}${url}`, {headers:  header1})
             .then((res) => {
-                resolve(res);
+                return resolve(res);
             })
-            .catch((error) => reject(-1));
+            .catch((error) => {console.log(error.response);return reject(-1)});
     })
 }
 
 export async function putMethod(url, body) {
+    if(global.headers === true) {
+        header1.Authorization = "Bearer "+ await AsyncStorage.getItem(STRINGS.TOKEN);
+    }
     return new Promise(async (resolve, reject) => {
-        const headers = {
-            'Content-Type': "application/json"
-        }
         return await axios
-            .put(`${API}${url}`, body, headers)
+            .put(`${API}${url}`, body, {headers:  header1})
             .then((res) => {
-                resolve(res);
+                return resolve(res.data);
             })
-            .catch((error) => reject(-1));
+            .catch((error) => {return reject(-1)});
     })
 }
 

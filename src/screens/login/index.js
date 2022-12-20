@@ -1,72 +1,101 @@
-import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, StatusBar, Animated, Image } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, StyleSheet, Dimensions, Image, TouchableOpacity, ToastAndroid, DeviceEventEmitter, ActivityIndicator } from "react-native";
 import * as COLOUR from "../../../constants/colors";
-import { google, facebook } from "../../../constants/icons";
 import Text from "../../../component/text";
-import Header from "../../../component/header";
 import Button from "../../../component/button";
 import Input from "../../../component/inputBox";
-import MainContainer from "../../../component/mainContainer";
-import { TouchableOpacity } from "react-native-gesture-handler";
+import { postMethod, getMethod } from "../../../utils/function";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { updateProfileData } from "../../../redux/actions";
+import { useDispatch } from 'react-redux';
+import * as STRINGS from "../../../constants/strings";
+import SplashScreen from 'react-native-splash-screen'
+const { width } = Dimensions.get("screen");
 
-export default function Corousal(props) {
+export default function Login(props) {
     const [mobile, setMobile] = useState("");
+    const [ccode, setCCode] = useState("+91");
     const [password, setPassword] = useState("");
-    const headingAnimator = useRef(new Animated.Value(0)).current;
+    const [btnLoader, setBtnLoader] = useState(false);
+    const [resetLoader, setResetLoader] = useState(false);
+    const dispatch = useDispatch();
 
     useEffect(() => {
-        enableTitle();
+        SplashScreen.hide();
     },[])
 
-    const enableTitle = () => {
-        Animated.timing(headingAnimator, {
-            toValue: 1,
-            duration: 3000,
-            useNativeDriver: true
-        }).start()
+    function loginFunction() {
+        setBtnLoader(true)
+        if (password != "" && password.length < 8) {
+            setBtnLoader(false)
+            ToastAndroid.showWithGravity("Password should be atleast 8 characters.", ToastAndroid.SHORT, ToastAndroid.CENTER);
+        } else {
+            if (mobile != "" && password != "" && password.length > 7) {
+                var data = {
+                    phone: mobile,
+                    password: password,
+                    country_code: ccode,
+                    isAdmin: true
+                }
+                console.log(data)
+                postMethod('user/loginadmin', data).then(async res => {
+                    await AsyncStorage.setItem(STRINGS.TOKEN, res.token);
+                    global.token = res.token;
+                    console.log(res)
+                    global.headers = true;
+                        setMobile("");
+                        setPassword("");
+                        ToastAndroid.showWithGravity("Logged In.", ToastAndroid.SHORT, ToastAndroid.CENTER);
+                        setTimeout(() => {
+                            routerFunction(res);
+                        },1500)
+                        setBtnLoader(false)
+                }).catch(error => {
+                    ToastAndroid.showWithGravity(error.message, ToastAndroid.SHORT, ToastAndroid.CENTER);
+                    setBtnLoader(false)
+                })
+            } else {
+                setBtnLoader(false)
+                ToastAndroid.showWithGravity("Please fill all fields.", ToastAndroid.SHORT, ToastAndroid.CENTER);
+            }
+        }
     }
 
-    const renderSocialButton = (img) => {
-        return (
-            <TouchableOpacity style={styles.socialButton}>
-                <Image style={styles.socialImage} source={img} resizeMode="contain" />
-            </TouchableOpacity>
-        )
+    async function routerFunction(data) {
+        console.log("global.token", global.token)
+        console.log("global.headers", global.headers)
+        await AsyncStorage.setItem(STRINGS.UID, data.userId);
+        props.navigation.navigate("Homescreen");
     }
+
     return (
         <View style={styles.container}>
-            <StatusBar backgroundColor={COLOUR.LIGHTBG} barStyle="dark-content" />
-            <Header signin />
-            <View style={styles.mainContainer}>
-                <Animated.View style={[styles.titleContainer, {opacity: headingAnimator}]}>
-                    <Text title={`Here To Get\nWelcome!`} type="title" />
-                </Animated.View>
-                <View style={styles.formContainer}>
-                <Input
-                value={mobile}
-                onChangeText={data=> console.log(data)}
-                keyboardType="number-pad"
-                placeholder="Phone number" />
-                <Input
-                value={password}
-                onChangeText={data=> console.log(data)}
-                keyboardType={"default"}
-                secureTextEntry={true}
-                placeholder="Password" />
-                <Button title="Sign In" onPress={() => props.navigation.navigate("HomeScreen")} style={[styles.buttonStyle, {marginTop: 35}]} textStyle={{ color: COLOUR.WHITE }} />
-                <View style={{flexDirection: "row"}}>
-                <Text onPress={() => props.navigation.navigate("Signup")} title="Don't have an account? " type="paragraph" style={{ marginVertical: 20 }} />
-                <Text onPress={() => props.navigation.navigate("Signup")} title="Sign up" type="paragraph" style={{ marginVertical: 20, color: COLOUR.PRIMARY }} />
-                </View>
-                </View>
-                <View style={[styles.socialContainer]}>
-                <Text onPress={() => props.navigation.navigate("Signup")} title="Or sign in with" type="paragraph" style={{ color: COLOUR.PRIMARY }} />
-                <View style={{flexDirection: "row", marginBottom: 50}}>
-                    {renderSocialButton(google)}
-                    {renderSocialButton(facebook)}
-                </View>
-                </View>
+            <View style={styles.titleContainer}>
+                <Text title={"Sign In"} type="label" lines={2} style={[{ color: COLOUR.BLACK, fontSize: 24 }]} />
+                <Text title={"Welcome back!"} type="label" lines={2} style={[{ color: COLOUR.BLACK, fontSize: 18 }]} />
+                <Text title={"Please login to continue"} type="label" lines={2} style={[{ color: COLOUR.BLACK, fontSize: 18 }]} />
             </View>
+            <View style={styles.inputContainer}>
+                <Input
+                    placeholder="Mobile Number"
+                    value={mobile}
+                    keyboardType="number-pad"
+                    country={true}
+                    onChangeText={data => setMobile(data)}
+                    style={[styles.inputStyle, { width: "100%" }]} />
+                <Input
+                    placeholder="Password"
+                    value={password}
+                    onChangeText={data => setPassword(data)}
+                    eye={true}
+                    secureTextEntry={true}
+                    style={[styles.inputStyle, { width: "100%", marginTop: 15 }]} />
+            </View>
+            <Button
+                title="Log In"
+                loader={btnLoader}
+                onPress={() => loginFunction()}
+                style={styles.login} />
         </View>
     )
 }
@@ -74,52 +103,53 @@ export default function Corousal(props) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLOUR.LIGHTBG
-    },
-    mainIcon: {
-        width: 80,
-        height: 80
-    },
-    buttonStyle: {
-        marginTop: 10,
-        width: "40%"
-    },
-    mainContainer: {
-        flex: 1,
-        backgroundColor: COLOUR.WHITE,
-        borderTopRightRadius: 30,
-        borderTopLeftRadius: 30
-    },
-    formContainer: {
-        width: '100%',
-        paddingHorizontal: 20
+        backgroundColor: COLOUR.WHITE
     },
     titleContainer: {
         width: "100%",
-        height: "30%",
+        height: "25%",
         justifyContent: "center",
-        paddingLeft: 20
+        padding: 20
     },
-    socialContainer: {
+    iconContainer: {
+        width: width,
+        height: 80,
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexDirection: "row",
+        paddingHorizontal: 20
+    },
+    profileImageBtn: {
+        width: 70,
+        height: 70,
+        borderRadius: 25,
+        overflow: "hidden"
+    },
+    profileImage: {
         width: "100%",
-        paddingHorizontal: 20,
-        position: "absolute",
-        bottom: 0,
-        paddingBottom: 10
+        height: "100%"
     },
-    socialButton: {
-        width: 50,
-        height: 50,
-        borderRadius: 35,
-        backgroundColor: COLOUR.WHITE,
+    register: {
+        width: width / 3,
+        height: 35
+    },
+    inputContainer: {
+        width: width,
+        height: "30%",
         alignItems: "center",
         justifyContent: "center",
-        elevation: 3,
-        marginVertical: 10,
-        marginRight: 10
+        paddingHorizontal: 20
     },
-    socialImage: {
-        width: "75%",
-        height: "75%"
+    login: {
+        width: width - 40,
+        alignSelf: "center"
+    },
+    forgot: {
+        width: width,
+        height: 50,
+        marginTop: 20,
+        alignItems: "center",
+        justifyContent: "center",
+        flexDirection: "row",
     }
 })
