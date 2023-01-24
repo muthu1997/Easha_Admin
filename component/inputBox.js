@@ -26,7 +26,7 @@
         //  }}
         ref={props.ref ? props.ref : null}
         autoFocus={props.autoFocus ? props.autoFocus : false}
-         secureTextEntry={props.secureTextEntry}
+         secureTextEntry={props.secureTextEntry ? props.secureTextEntry : false}
          onSubmitEditing={() => props.onSubmitEditing ? props.onSubmitEditing() : null}
          returnKeyType={props.returnKeyType}
          keyboardType={props.keyboardType}

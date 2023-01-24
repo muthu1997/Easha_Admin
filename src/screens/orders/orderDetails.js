@@ -36,6 +36,7 @@ export default function MyOrdersDetails(props) {
     const [showNetErrorComponent, setNetErrorComponent] = useState(false)
     const [loading, setLoading] = useState(true);
     const dispatch = useDispatch();
+    const user = useSelector(state => state.profile);
     const orderData = useSelector(state => state.orderDetails)
 
     useEffect(() => {
@@ -177,7 +178,7 @@ export default function MyOrdersDetails(props) {
         return (
             <View key={index} style={styles.pcardContainer}>
                 <View style={styles.imageContainer}>
-                    <Image source={{ uri: item.product.image }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
+                    <Image source={{ uri: item.product.image[0].image }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
                 </View>
                 <View style={[styles.dataContainer]}>
                     <Text title={item.product.name} type="label" lines={1} />
@@ -248,6 +249,7 @@ export default function MyOrdersDetails(props) {
                 <TitleContainer
                     title="Delivery address" />
                 {renderAddressCard()}
+                <Button onPress={() => props.navigation.navigate("ChatScreen",{customer: {_id: orderData.user._id, name: orderData.user.name}})} title="Chat" style={{ width: "40%", margin: 5 }} />
                 <View style={[styles.dataContainer, { flexDirection: "row", width: "100%", alignSelf: "center", height: 60, alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, borderBottomWidth: 2, borderBottomColor: COLOUR.LIGHTGRAY }]}>
                     <Text title={`Expected delivery date: ${orderData?.expDelDate ? moment(orderData?.expDelDate).format("DD MMM YYYY") : ""}`} type="label" lines={1} style={{ color: COLOUR.DARK_GRAY, fontSize: 12 }} />
                     {orderData.status !== "DELIVERED" ? <Button title={"Update"} onPress={() => refRBSheet.current.open()} style={{ alignSelf: "center", height: 30, width: "25%", backgroundColor: COLOUR.WHITE }} textStyle={{ color: COLOUR.ORANGE_DARK }} /> : null }

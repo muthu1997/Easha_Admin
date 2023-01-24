@@ -2,6 +2,7 @@ import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {API} from "../constants/config";
 import * as STRINGS from "../constants/strings";
+import { err } from 'react-native-svg/lib/typescript/xml';
 
 const header1 = {
     'Content-Type': 'application/json',
@@ -26,6 +27,7 @@ export async function postMethod(url, body) {
 }
 
 export async function getMethod(url) {
+    console.log(url)
     if(global.headers === true) {
         header1.Authorization = "Bearer "+ await AsyncStorage.getItem(STRINGS.TOKEN);
     }
@@ -35,7 +37,10 @@ export async function getMethod(url) {
             .then((res) => {
                 return resolve(res.data);
             })
-            .catch((error) => {return reject(-1)});
+            .catch((error) => {
+                console.log("Error: ",error.response.data)
+                return reject(-1)
+            });
     })
 }
 
@@ -95,7 +100,7 @@ export async function uploadImage(localImage, name, callback) {
 
 export const sendFirebaseNotification = async (message, token) => {
     var myHeaders = new Headers();
-    myHeaders.append("Authorization", "key=AAAAIKn5mgg:APA91bFLt3pE2GaHcMNPzBKPddQtcfPaZcuiUHLsIgK63f4jXFKJpQmj5RBUC_ho7jLGg00EkcHyrdjCBd6DG0D-oYgyBn3WcyPAyxkb13Qai8HST2DrUr-Of4vKwXbWd7XhOIVDI3i4");
+    myHeaders.append("Authorization", "key=AAAAQSdTRPE:APA91bEjIUQi_TuU-823TMlY038XlN5Y6bEGvD1Wf8o8elCAXCtXHd1RKYmmEdv_R3w7aum1k2VowRhn-xRYmrsA660mw1IpO_mU7b53oQsNKAvydtHOgEh1KpbEag_ljz8mx-VZMeGw");
     myHeaders.append("Content-Type", "application/json");
 
     var raw = JSON.stringify({

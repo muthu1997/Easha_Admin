@@ -1,9 +1,9 @@
-import { STORE_ANALYTICS, STORE_CATEGORY, STORE_SIZE, STORE_CAT_PRODUCT, STORE_DELIVERY, STORE_COMPLETED_ORDER, STORE_PENDING_ORDER, STORE_ORDER_DETAILS, UPDATE_PROFILE_DATA } from "./types";
-import { getMethod, uploadImage, putMethod, postMethod } from "../utils/function";
+import { STORE_ANALYTICS, STORE_CATEGORY, STORE_SIZE, STORE_CAT_PRODUCT, STORE_DELIVERY, STORE_COMPLETED_ORDER, STORE_PENDING_ORDER, STORE_ORDER_DETAILS, UPDATE_PROFILE_DATA, STORE_SHOP_LIST, STORE_MAIN_CATEGORY, STORE_SELLER_PRODUCT } from "./types";
+import { getMethod, uploadImage, putMethod, postMethod, deleteMethod } from "../utils/function";
 
 export const storeAnalytics = (id) => (dispatch) => {
     return new Promise((resolve, reject) => {
-        getMethod(`admin/analytics`).then(res => {
+        getMethod(`admin/analytics/${id}`).then(res => {
             dispatch({
                 type: STORE_ANALYTICS,
                 payload: res.data
@@ -15,11 +15,25 @@ export const storeAnalytics = (id) => (dispatch) => {
     })
 }
 
-export const storeCategory = () => (dispatch) => {
+export const storeCategory = (pid) => (dispatch) => {
     return new Promise((resolve, reject) => {
-        getMethod("category/list").then(res => {
+        getMethod(`category/listbypid/${pid}`).then(res => {
             dispatch({
                 type: STORE_CATEGORY,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const storeMainCategory = () => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod("maincategory/list").then(res => {
+            dispatch({
+                type: STORE_MAIN_CATEGORY,
                 payload: res.data
             })
             return resolve(res.data);
@@ -50,16 +64,30 @@ export const updateMethod = (url, body) => (dispatch) => {
     })
 }
 
+export const deleteImageFromAWS = (id) => (dispatch) => {
+    return new Promise(async (resolve, reject) => {
+        let body = {
+            key: id
+        }
+        putMethod(`images/aws`, body)
+            .then(response => {
+                return resolve(response);
+            }).catch(error => {
+                return reject(error)
+            })
+    })
+}
+
 export const postMethodFunction = (url, body) => (dispatch) => {
     console.log(body)
     return new Promise(async (resolve, reject) => {
         postMethod(url, body).then(response => {
             console.log(response)
-                return resolve(response);
-            }).catch(error => {
-                console.log(error)
-                return reject(error)
-            })
+            return resolve(response);
+        }).catch(error => {
+            console.log(url + " = " + JSON.stringify(error))
+            return reject(error)
+        })
     })
 }
 
@@ -157,6 +185,52 @@ export const updateProfileData = (_id) => (dispatch) => {
             return resolve(res.data);
         }).catch(err => {
             return reject(err);
+        })
+    })
+}
+
+export const getShopList = (user_id) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`shop/list/${user_id}`).then(res => {
+            console.log(res.data)
+            dispatch({
+                type: STORE_SHOP_LIST,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const getConversationsByUser = (fromUser, toUser) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`chatlist/${toUser}/${fromUser}`).then(res => {
+            console.log("res.data: ",res.data)
+            if (res.data.length > 0) {
+                dispatch({
+                    type: "update_local_message",
+                    payload: { message: res.data[0].messages, conversationId: toUser }
+                })
+            }
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const storeSellerProduct = (id) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`product/listbysellerid/${id}`).then(res => {
+            dispatch({
+                type: STORE_SELLER_PRODUCT,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(-1);
         })
     })
 }

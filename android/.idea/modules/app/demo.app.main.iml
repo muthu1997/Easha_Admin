@@ -59,6 +59,7 @@
     <orderEntry type="module" module-name="demo.react-native-community_netinfo.main" />
     <orderEntry type="module" module-name="demo.react-native-masked-view_masked-view.main" />
     <orderEntry type="module" module-name="demo.react-native-date-picker.main" />
+    <orderEntry type="module" module-name="demo.react-native-exception-handler.main" />
     <orderEntry type="module" module-name="demo.react-native-gesture-handler.main" />
     <orderEntry type="module" module-name="demo.react-native-image-picker.main" />
     <orderEntry type="module" module-name="demo.react-native-maps.main" />

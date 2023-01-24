@@ -13,6 +13,7 @@
           <stringArguments>
             <stringArg name="classpath">
               <args>
+                <arg>$MODULE_DIR$/../../../../node_modules/react-native-image-crop-tools/android/build/intermediates/compile_r_class_jar/debug/R.jar</arg>
                 <arg>$USER_HOME$/.gradle/caches/transforms-3/1fd2910278b3b6f453438b6d20a473c1/transformed/jetified-react-native-0.66.4-api.jar</arg>
                 <arg>$USER_HOME$/.gradle/caches/transforms-3/e914663165b33d66e364c56751ec8ef2/transformed/jetified-infer-annotation-0.18.0.jar</arg>
                 <arg>$USER_HOME$/.gradle/caches/transforms-3/e0ad5a2629bd5a9908672e7188f10a05/transformed/jetified-jsr305-3.0.2.jar</arg>

@@ -19,6 +19,7 @@ export default function Success(props) {
     const [showNetErrorComponent, setNetErrorComponent] = useState(false)
     const [loading, setLoading] = useState(true);
     const dispatch = useDispatch();
+    const PID = props.route.params.PID;
 
     const categoryList = useSelector(state => state.categoryList)
 
@@ -28,7 +29,7 @@ export default function Success(props) {
 
     const getCategoryList = async () => {
         if (await isInternetConnection()) {
-            dispatch(storeCategory()).then(res => {
+            dispatch(storeCategory(PID)).then(res => {
                 setLoading(false);
             }).catch(error => {
                 setLoading(false);
@@ -71,6 +72,8 @@ export default function Success(props) {
             <Header
                 title="Product categories"
                 rightIcon="plus-circle"
+                back
+                onBackPress={()=>props.navigation.goBack()}
                 onRightButtonPress={() => props.navigation.navigate("AddCategory", { type: "add" })}
             />
             <View style={styles.mainContainer}>

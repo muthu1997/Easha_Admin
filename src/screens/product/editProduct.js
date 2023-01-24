@@ -11,12 +11,13 @@ import RBSheet from "react-native-raw-bottom-sheet";
 import { FlatList } from "react-native-gesture-handler";
 import RNFetchBlob from 'rn-fetch-blob';
 import Header from "../../../component/header";
-import { uploadImg, storeCategoryProduct, postMethodFunction } from "../../../redux/actions";
+import { uploadImg, storeCategoryProduct, deleteImageFromAWS } from "../../../redux/actions";
 import { RadioButton } from "react-native-paper";
 import { putMethod } from "../../../utils/function";
-const {width, height} = Dimensions.get("screen"); 
+const { width, height } = Dimensions.get("screen");
 import { CropView } from 'react-native-image-crop-tools';
 import { imageSizeHandler } from "../../../utils/imageHandler";
+import { awsuploadImageToBucket } from "../../../utils/awsconfig"
 /* basic imports */
 import { FailureComponent } from "../mascelinous/requestFail";
 import { isInternetConnection } from "../../../utils/checkInternet";
@@ -32,13 +33,20 @@ export default function UpdateProducts(props) {
     const [imageType, setImageType] = React.useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [isPremium, setIsPremium] = useState("NON-PREMIUM");
-    const [checked, setChecked] = React.useState(false);
     const [submitLoader, setSubmitLoader] = React.useState(false);
     const refRBSheet = useRef();
     const [cropImage, setCropImage] = useState("");
+    const [s3Image, setS3Image] = useState("");
     const [isImageSizeExceeds, setIsImageSizeExceeds] = useState("");
     const [renderCrop, setRenderCrop] = useState(false);
     const cropRef = useRef();
+    // edit crop picker height and width management
+    const [squareWidth, setSquareWidth] = useState(640);
+    const [portraitWidth, setPortraitWidth] = useState(710);
+    const [landscapeWidth, setLandscapeWidth] = useState(1080);
+    const [squareHeight, setSquareHeight] = useState(640);
+    const [portraitHeight, setPortraitHeight] = useState(840);
+    const [landscapeHeight, setLandscapeHeight] = useState(720);
     /* loader and error components */
     const [showErrorComponent, setErrorComponent] = useState(false)
     const [showNetErrorComponent, setNetErrorComponent] = useState(false)
@@ -72,25 +80,23 @@ export default function UpdateProducts(props) {
     async function submitWithImage() {
         let proData = props.route.params.data;
         if (await isInternetConnection()) {
-            await uploadImg(image, name).then(async response => {
+            awsuploadImageToBucket(s3Image, "Products/").then(async response => {
                 setSubmitLoader(true)
                 let body = {
                     "name": name,
                     "description": description,
-                    "width": 0,
-                    "height": 0,
-                    "deliveryPrice": 0,
                     "category": selectedCategory._id,
-                    "image": response,
-                    "owner": "62ebe9823c05919f44021c4c",
+                    "image": response.url,
+                    "imageCode": response.key,
                     "imageType": imageType,
                     "isPremium": isPremium === "PREMIUM" ? true : false
                 }
                 return putMethod(`product/${proData._id}`, body).then(res => {
+                    dispatch(deleteImageFromAWS(proData.imageCode))
                     dispatch(storeCategoryProduct(proData.category._id))
                     props.navigation.goBack()
                     setSubmitLoader(false)
-                    return ToastAndroid.show("Product added.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
+                    return ToastAndroid.show("Product updated!", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
                 }).catch(err => {
                     setSubmitLoader(false)
                     console.log("err")
@@ -115,9 +121,6 @@ export default function UpdateProducts(props) {
             let body = {
                 "name": name,
                 "description": description,
-                "width": 0,
-                "height": 0,
-                "deliveryPrice": 0,
                 "category": selectedCategory._id,
                 "owner": "62ebe9823c05919f44021c4c",
                 "imageType": imageType,
@@ -127,7 +130,7 @@ export default function UpdateProducts(props) {
                 dispatch(storeCategoryProduct(proData.category._id))
                 props.navigation.goBack()
                 setSubmitLoader(false)
-                return ToastAndroid.show("Product added.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
+                return ToastAndroid.show("Product updated.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
             }).catch(err => {
                 setSubmitLoader(false)
                 console.log("err")
@@ -140,6 +143,9 @@ export default function UpdateProducts(props) {
     }
 
     const imageHandler = () => {
+        if (imageType === "") {
+            return ToastAndroid.show("Please select image orientation(eg. Portrait)", ToastAndroid.BOTTOM, ToastAndroid.CENTER);
+        }
         let mediaType = "photo";
         const photooptions = {
             title: "Attach Files",
@@ -161,11 +167,11 @@ export default function UpdateProducts(props) {
                     .then(async (stats) => {
                         console.log(response)
                         console.log("original fileSize", response.assets[0].fileSize)
-                        if ((stats.size / 1024 / 1024) > 1) {
+                        if ((stats.size / 1024 / 1024) > 2) {
                             console.log("if statement")
                             setCropImage(`${response.assets[0].uri}`)
                             imageSizeHandler(response.assets[0].fileSize).then(response => {
-                                console.log("Compress percentage: ",response)
+                                console.log("Compress percentage: ", response)
                                 setIsImageSizeExceeds(response);
                                 setRenderCrop(true)
                             }).catch(error => {
@@ -245,7 +251,15 @@ export default function UpdateProducts(props) {
                             .then(async (stats) => {
                                 console.log("stats: ", stats)
                                 console.log("total size: ", (stats.size / 1024 / 1024))
-                                if ((stats.size / 1024 / 1024) > 1) {
+                                let format = stats.filename.split(".");
+                                let fileData = {
+                                    uri: `file://${res.uri}`,
+                                    name: stats.filename,
+                                    type: `image/${format[1]}`
+                                }
+                                setS3Image(fileData);
+                                setImageStatus(true)
+                                if ((stats.size / 1024 / 1024) > 3) {
                                     ToastAndroid.show("Image size is too big. Please upload another image.", ToastAndroid.CENTER, ToastAndroid.BOTTOM)
                                     return setRenderCrop(false);
                                 } else {
@@ -256,8 +270,28 @@ export default function UpdateProducts(props) {
                     }}
                     ref={cropRef}
                     keepAspectRatio
-                    aspectRatio={{ width: 640, height: 640 }}
-                /> : null }
+                    aspectRatio={{ width: imageType === "SQUARE" ? squareWidth : imageType === "PORTRAIT" ? portraitWidth : landscapeWidth, height: imageType === "SQUARE" ? squareHeight : imageType === "PORTRAIT" ? portraitHeight : landscapeHeight }}
+                /> : null}
+                <View style={styles.editContainer}>
+                    <View style={{ flexDirection: "row", marginRight: 5, alignItems:"center" }}>
+                        <TouchableOpacity activeOpacity={0.8} onPress={() => imageType === "SQUARE" ? setSquareWidth(squareWidth - 30) : imageType === "PORTRAIT" ? setPortraitWidth(portraitWidth - 30) : setLandscapeWidth(landscapeWidth - 30)} style={styles.editButton}>
+                        <Icon name="minus" size={20} />
+                        </TouchableOpacity>
+                        <Text title={"Width"} type="hint" style={{ color: COLOUR.WHITE }} />
+                        <TouchableOpacity activeOpacity={0.8} onPress={() => imageType === "SQUARE" ? setSquareWidth(squareWidth + 30) : imageType === "PORTRAIT" ? setPortraitWidth(portraitWidth + 30) : setLandscapeWidth(landscapeWidth + 30)} style={styles.editButton}>
+                        <Icon name="plus" size={20} />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={{ flexDirection: "row", marginLeft: 5, alignItems:"center" }}>
+                        <TouchableOpacity activeOpacity={0.8} onPress={() => imageType === "SQUARE" ? setSquareHeight(squareHeight - 30) : imageType === "PORTRAIT" ? setPortraitHeight(portraitHeight - 30) : setLandscapeHeight(landscapeHeight - 30)} style={styles.editButton}>
+                        <Icon name="minus" size={20} />
+                        </TouchableOpacity>
+                        <Text title={"Height"} type="hint" style={{ color: COLOUR.WHITE }} />
+                        <TouchableOpacity activeOpacity={0.8} onPress={() => imageType === "SQUARE" ? setSquareHeight(squareHeight + 30) : imageType === "PORTRAIT" ? setPortraitHeight(portraitHeight + 30) : setLandscapeHeight(landscapeHeight + 30)} style={styles.editButton}>
+                        <Icon name="plus" size={20} />
+                        </TouchableOpacity>
+                    </View>
+                </View>
                 <Button title="Crop image" style={{ width: "60%" }} onPress={() => cropRef.current.saveImage(true, isImageSizeExceeds === "" ? 100 : isImageSizeExceeds)} />
             </View>
         )
@@ -437,5 +471,21 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: COLOUR.BLACK
+    },
+    editContainer: {
+        width: "50%",
+        padding: 5,
+        alignSelf: "center",
+        alignItems: "center",
+        justifyContent: "space-around",
+        flexDirection: "row",
+        marginBottom: 5
+    },
+    editButton: {
+        backgroundColor: COLOUR.WHITE,
+        width: 25,
+        height: 25,
+        alignItems:"center",
+        justifyContent: "center"
     }
 })

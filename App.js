@@ -32,6 +32,8 @@ import Store from "./redux/store";
 import * as STRINGS from "./constants/strings";
 import messaging, { firebase } from '@react-native-firebase/messaging';
 import PushNotification from "react-native-push-notification";
+import io from 'socket.io-client';
+import createSocketIoMiddleware from 'redux-socket.io';
 //Orders Tab
 import OrderList from "./src/screens/orders/orderList";
 import OrderData from "./src/screens/orders/orderDetails";
@@ -48,12 +50,25 @@ import Settings from "./src/screens/settings/settings";
 import PhotoSizeList from "./src/screens/settings/photoSizeList";
 import AddSize from "./src/screens/settings/addSize";
 import EditSize from "./src/screens/settings/editSize";
+import ShopList from "./src/screens/shop/shopList";
+import NewShop from "./src/screens/shop/addShop";
+import UpdateShop from "./src/screens/shop/updateShop";
+import MainCategory from "./src/screens/settings/mainCat";
+import UpdateMainCategory from "./src/screens/settings/updateMainCat";
+//Products
+import GetSellerProduct from "./src/screens/product/productBySID";
 //Login
 import Login from "./src/screens/login/index";
+//Chat
+import ChatScreen from "./src/screens/chat/chat";
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
-const configureStore = createStore(Store, applyMiddleware(thunk));
+const configureStore = () => {
+  const socket = io.connect("http://192.168.0.102:3001");
+  const socketIoMiddleware = createSocketIoMiddleware(socket, "server/")
+  return createStore(Store, applyMiddleware(thunk, socketIoMiddleware));
+}
 export default function App() {
   const [renderHome, setRenderHome] = useState("");
   useEffect(() => {
@@ -74,11 +89,12 @@ export default function App() {
   }, [])
 
   async function requestUserPermission() {
+    console.log("inside requestUserPermission")
     const authStatus = await messaging().requestPermission();
     const enabled =
       authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
       authStatus === messaging.AuthorizationStatus.PROVISIONAL;
-  
+
     if (enabled) {
       console.log('Authorization status:', authStatus);
       getFcmToken();
@@ -105,6 +121,7 @@ export default function App() {
     });
   }
   async function getLocalData(dummyData) {
+    console.log("inside getLocalData")
     if (dummyData) {
       setRenderHome("");
     }
@@ -134,6 +151,7 @@ export default function App() {
       <Stack.Navigator>
         <Stack.Screen name="Orders" component={OrderList} options={{ headerShown: false }} />
         <Stack.Screen name="OrderDetails" component={OrderData} options={{ headerShown: false }} />
+        <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -141,11 +159,9 @@ export default function App() {
   function CategoryTab() {
     return (
       <Stack.Navigator>
-        <Stack.Screen name="CategoryList" component={CategoryList} options={{ headerShown: false }} />
+        <Stack.Screen name="SellerProduct" component={GetSellerProduct} options={{ headerShown: false }} />
         <Stack.Screen name="NewProduct" component={NewProduct} options={{ headerShown: false }} />
         <Stack.Screen name="EditProduct" component={updateProducts} options={{ headerShown: false }} />
-        <Stack.Screen name="AddCategory" component={AddCategory} options={{ headerShown: false }} />
-        <Stack.Screen name="productlist" component={ProductList} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -171,6 +187,14 @@ export default function App() {
         <Stack.Screen name="AddSize" component={AddSize} options={{ headerShown: false }} />
         <Stack.Screen name="EditSize" component={EditSize} options={{ headerShown: false }} />
         <Stack.Screen name="DeliveryCharge" component={DeliveryPrice} options={{ headerShown: false }} />
+        <Stack.Screen name="ShopList" component={ShopList} options={{ headerShown: false }} />
+        <Stack.Screen name="NewShop" component={NewShop} options={{ headerShown: false }} />
+        <Stack.Screen name="UpdateShop" component={UpdateShop} options={{ headerShown: false }} />
+        <Stack.Screen name="MainCategoryScreen" component={MainCategory} options={{ headerShown: false }} />
+        <Stack.Screen name="UpdateMainCategoryScreen" component={UpdateMainCategory} options={{ headerShown: false }} />
+        <Stack.Screen name="CategoryList" component={CategoryList} options={{ headerShown: false }} />
+        <Stack.Screen name="AddCategory" component={AddCategory} options={{ headerShown: false }} />
+        <Stack.Screen name="productlist" component={ProductList} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -193,7 +217,7 @@ export default function App() {
             tabBarIcon: (data) => data.focused === true ? <Image source={home} resizeMode="contain" style={styles.icon} /> :
               <Image source={home_hide} resizeMode="contain" style={styles.icon} />
           }} />
-        <Tab.Screen name="Categories" component={CategoryTab} options={
+        <Tab.Screen name="My Products" component={CategoryTab} options={
           {
             headerShown: false,
             tabBarIcon: (data) => data.focused === true ? <Image source={cat_vis} resizeMode="contain" style={styles.icon} /> :
@@ -226,7 +250,7 @@ export default function App() {
     return <View style={{ flex: 1 }} />
   }
   return (
-    <Provider store={configureStore}>
+    <Provider store={configureStore()}>
       <NavigationContainer>
         <StatusBar backgroundColor={COLOUR.PRIMARY} />
         <Stack.Navigator>

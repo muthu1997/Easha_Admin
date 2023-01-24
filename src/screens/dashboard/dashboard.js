@@ -7,7 +7,7 @@ import Text from "../../../component/text";
 import { storeAnalytics, storePendingOrderList } from "../../../redux/actions";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as STRINGS from "../../../constants/strings";
-import { updateProfileData } from "../../../redux/actions";
+import { updateProfileData, getShopList, storeMainCategory } from "../../../redux/actions";
 import moment from "moment";
 import SplashScreen from 'react-native-splash-screen'
 /* basic imports */
@@ -33,6 +33,7 @@ export default function Dashboard(props) {
 
     const dispatch = useDispatch();
     useEffect(() => {
+        console.log("inside useEffect")
         getLocalDatas();
         const backHandler = BackHandler.addEventListener("onHardwareBackPress", backPress);
         return () => backHandler.remove()
@@ -41,9 +42,8 @@ export default function Dashboard(props) {
     const getLocalDatas = async () => {
         await AsyncStorage.getItem(STRINGS.UID).then(res => {
             if (res) {
+                global.uid = res;
                 getUserData(res);
-                getDashboardAnalytics(res);
-                orderPendingList();
             }
         });
     }
@@ -54,7 +54,7 @@ export default function Dashboard(props) {
             var data = {
                 "token": global.fcmtoken
             }
-            putMethod(`user/update/${user._id}`, data).then(async res => {
+            putMethod(`user/update/${global.uid}`, data).then(async res => {
                 await AsyncStorage.setItem(STRINGS.TOKEN_UPDATE, "UPDATED")
                 return console.log(res)
             }).catch(err => {
@@ -65,8 +65,12 @@ export default function Dashboard(props) {
 
     const getUserData = (_id) => {
         dispatch(updateProfileData(_id)).then(res => {
+            dispatch(storeMainCategory());
             updateFCMToken();
-            SplashScreen.hide();
+            getDashboardAnalytics(global.uid);
+            orderPendingList();
+            dispatch(getShopList(_id));
+            return SplashScreen.hide();
         });
     }
 
@@ -108,6 +112,7 @@ export default function Dashboard(props) {
 
     async function getDashboardAnalytics(id) {
         if (await isInternetConnection()) {
+            console.log("inside")
             return dispatch(storeAnalytics(id)).then(res => {
                 monthlyData.data = res.incomeData;
                 console.log("res.incomeData")

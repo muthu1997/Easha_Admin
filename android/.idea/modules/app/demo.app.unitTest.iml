@@ -35,6 +35,7 @@
     <orderEntry type="module" module-name="demo.react-native-community_netinfo.main" scope="TEST" />
     <orderEntry type="module" module-name="demo.react-native-masked-view_masked-view.main" scope="TEST" />
     <orderEntry type="module" module-name="demo.react-native-date-picker.main" scope="TEST" />
+    <orderEntry type="module" module-name="demo.react-native-exception-handler.main" scope="TEST" />
     <orderEntry type="module" module-name="demo.react-native-gesture-handler.main" scope="TEST" />
     <orderEntry type="module" module-name="demo.react-native-image-picker.main" scope="TEST" />
     <orderEntry type="module" module-name="demo.react-native-maps.main" scope="TEST" />

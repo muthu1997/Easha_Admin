@@ -18,7 +18,7 @@ import Loader from "../../../component/loader";
 import { failure, net_failure } from "../../../constants/icons";
 import { storeCategoryProduct } from "../../../redux/actions";
 
-export default function Success(props) {
+export default function ProductList(props) {
     const [getSelectedProduct, setSelectedProduct] = useState("");
     const [deleteBtnLoader, setDeleteBtnLoader] = useState(false);
     const [categoryList, setCatList] = useState([]);
@@ -75,7 +75,7 @@ export default function Success(props) {
         return (
             <View style={styles.cardContainer}>
                 <View style={styles.imageContainer}>
-                    <Image source={{ uri: item.image }} style={styles.itemImage} resizeMode="contain" />
+                    <Image source={{ uri: item.image[0].image }} style={styles.itemImage} resizeMode="contain" />
                 </View>
                 <View style={styles.dataContainer}>
                     <View style={{width: "100%"}}>

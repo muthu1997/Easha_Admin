@@ -11,38 +11,56 @@ import RBSheet from "react-native-raw-bottom-sheet";
 import { FlatList } from "react-native-gesture-handler";
 import RNFetchBlob from 'rn-fetch-blob';
 import Header from "../../../component/header";
-import { uploadImg, storeCategoryProduct, postMethodFunction } from "../../../redux/actions";
+import { uploadImg, storeCategoryProduct, postMethodFunction, storeCategory } from "../../../redux/actions";
 import { RadioButton } from "react-native-paper";
 import { imageSizeHandler } from "../../../utils/imageHandler";
 import { CropView } from 'react-native-image-crop-tools';
+import { awsuploadImageToBucket } from "../../../utils/awsconfig"
 /* basic imports */
 import { FailureComponent } from "../mascelinous/requestFail";
 import { isInternetConnection } from "../../../utils/checkInternet";
 import { useSelector, useDispatch } from "react-redux";
 import Loader from "../../../component/loader";
 import { failure, net_failure } from "../../../constants/icons";
-const {width, height} = Dimensions.get("screen"); 
-
+const { width, height } = Dimensions.get("screen");
+let desc = "This Painting is 100% handmade made with original 22 carat gold leaves and authentic Jaipur gems by skilled artisans in Thanjavur. Beautiful gift for any auspicious occasion.\n\nMaterials: \n22 Carat Original Gold Foils, \nWater Resistant Plywood, Cloth, \npaints, \nauthentic Jaipur gem stones, \nArabic gum and chalk powder.\n\nFrame: \nTraditional Chettinad Teak Wood frame and Unbreakable fiberglass. Color: Multicolor.\n\nIdeal for:\n· Pooja rooms\n· Home Main Entrance\n· Pooja Doors\n· Waiting Halls\n· Office reception\n· Staircase wall\n· Study room\n· Sit-out area\n· Lobby Area"
 export default function SignupFunction(props) {
-    const [description, setDescription] = useState("This Painting is 100% handmade made with original 22 carat gold leaves and authentic Jaipur gems by skilled artisans in Thanjavur. Beautiful gift for any auspicious occasion.\n\nMaterials: \n22 Carat Original Gold Foils, \nWater Resistant Plywood, Cloth, \npaints, \nauthentic Jaipur gem stones, \nArabic gum and chalk powder.\n\nFrame: \nTraditional Chettinad Teak Wood frame and Unbreakable fiberglass. Color: Multicolor.\n\nIdeal for:\n· Pooja rooms\n· Home Main Entrance\n· Pooja Doors\n· Waiting Halls\n· Office reception\n· Staircase wall\n· Study room\n· Sit-out area\n· Lobby Area");
+    const [description, setDescription] = useState("");
     const [name, setName] = useState("");
-    const [image, setImage] = useState("");
+    const [image, setImage] = useState([]);
     const [imageType, setImageType] = useState("");
+    const [selectedMainCategory, setSelectedMainCategory] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [isPremium, setIsPremium] = useState("NON-PREMIUM");
     const [checked, setChecked] = useState(false);
     const [submitLoader, setSubmitLoader] = useState(false);
     const refRBSheet = useRef();
     const [cropImage, setCropImage] = useState("");
+    const [s3Image, setS3Image] = useState([]);
     const [isImageSizeExceeds, setIsImageSizeExceeds] = useState("");
     const [renderCrop, setRenderCrop] = useState(false);
     const cropRef = useRef();
+    const [imageProcessingType, setImageProcessingType] = useState("");
+    const [imageUpdateId, setImageUpdateId] = useState(0);
+    const [renderRBSheetType, setRenderRBSheetType] = useState("");
+    const [sku, setSku] = useState("");
+    const [specifications, setSpecifications] = useState("");
+    const [mrp, setMrp] = useState(0);
+    const [actualPrice, setActualPrice] = useState(0);
+    const [pWidth, setPWidth] = useState(0);
+    const [pHeight, setPHeight] = useState(0);
+    const [whType, setWhType] = useState("CM");
+    const [firstImageType, setFirstImageType] = useState("");
+    const [showWeight, setShowWeight] = useState(false);
+    const [productWeight, setProductWeight] = useState(0);
+    const [productWeightType, setProductWeightType] = useState("KG");
     /* loader and error components */
     const [showErrorComponent, setErrorComponent] = useState(false)
     const [showNetErrorComponent, setNetErrorComponent] = useState(false)
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
 
     const categoryList = useSelector(state => state.categoryList);
+    const mainCategoryList = useSelector(state => state.mainCategoryList);
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -54,12 +72,25 @@ export default function SignupFunction(props) {
     }, [])
 
     async function submitProduct() {
-        if (name === "" || description === "" || image === "" || imageType === "" || selectedCategory === "") {
+        if (name === "" || description === "" || image.length === 0 || imageType === "" || selectedCategory === "") {
             ToastAndroid.show("Enter all the fields to continue....", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
         } else {
             if (await isInternetConnection()) {
-                setSubmitLoader(true)
-                await uploadImg(image, name).then(async response => {
+                setSubmitLoader(true);
+                let imageData = [];
+                await s3Image.map(async(item) => {
+                    await awsuploadImageToBucket(item.data, "Products/").then(async response => {
+                        imageData.push({
+                            image: response.url,
+                            imageCode: response.key
+                        })
+                    }).catch(error => {
+                        console.log("error")
+                        console.log(error)
+                        return ToastAndroid.show("Something went wrong, while uploading images..", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+                    })
+                })
+                    console.log(imageData)
                     let body = {
                         "name": name,
                         "description": description,
@@ -67,35 +98,40 @@ export default function SignupFunction(props) {
                         "height": 0,
                         "deliveryPrice": 0,
                         "category": selectedCategory._id,
-                        "image": response,
-                        "owner": "62ebe9823c05919f44021c4c",
-                        "imageType": imageType,
-                        "isPremium": isPremium === "PREMIUM" ? true : false
+                        "image": response.url,
+                        "imageCode": response.key,
+                        "productOwner": global.uid,
+                        "imageType": firstImageType,
+                        "isPremium": actualPrice > 50000 ? true : false,
+                        "sku": sku,
+                        "specification": specifications,
+                        "price": actualPrice,
+                        "mrp": mrp,
+                        "width": pWidth,
+                        "height": pHeight,
+                        "whType": whType,
+                        "isPortrait": firstImageType === "PORTRAIT" ? true : false,
+                        "weight": productWeight,
+                        "weightType": productWeightType
                     }
-                    return dispatch(postMethodFunction('product/newproduct', body)).then(res => {
-                        setName("");
-                        setImage("");
-                        setSelectedCategory("");
-                        setIsPremium("NON-PREMIUM");
-                        setImageType("");
-                        if (!checked) {
-                            props.navigation.goBack()
-                        }
-                        dispatch(storeCategoryProduct(props.route.params.catId))
-                        setSubmitLoader(false)
-                        return ToastAndroid.show("Product added.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
-                    }).catch(err => {
-                        setSubmitLoader(false)
-                        console.log("err")
-                        console.log(err)
-                        return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
-                    })
-                }).catch(error => {
-                    console.log("error")
-                    console.log(error)
-                    setSubmitLoader(false)
-                    return ToastAndroid.show("Something went wrong. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
-                })
+                    // return dispatch(postMethodFunction('product/newproduct', body)).then(res => {
+                    //     setName("");
+                    //     setImage("");
+                    //     setSelectedCategory("");
+                    //     setIsPremium("NON-PREMIUM");
+                    //     setImageType("");
+                    //     if (!checked) {
+                    //         props.navigation.goBack()
+                    //     }
+                    //     dispatch(storeCategoryProduct(props.route.params.catId))
+                    //     setSubmitLoader(false)
+                    //     return ToastAndroid.show("Product added.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
+                    // }).catch(err => {
+                    //     setSubmitLoader(false)
+                    //     console.log("err")
+                    //     console.log(err)
+                    //     return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+                    // })
             } else {
                 setNetErrorComponent(true);
             }
@@ -103,6 +139,9 @@ export default function SignupFunction(props) {
     }
 
     const imageHandler = () => {
+        if (imageType === "") {
+            return ToastAndroid.show("Please select image orientation(eg. Portrait)", ToastAndroid.BOTTOM, ToastAndroid.CENTER);
+        }
         let mediaType = "photo";
         const photooptions = {
             title: "Attach Files",
@@ -119,16 +158,16 @@ export default function SignupFunction(props) {
             } else if (response.error) {
                 console.log(response.error)
             } else {
-                console.log(response.assets[0].uri)
+                console.log(response)
                 RNFetchBlob.fs.stat(response.assets[0].uri)
                     .then(async (stats) => {
                         console.log(response)
                         console.log("original fileSize", response.assets[0].fileSize)
-                        if ((stats.size / 1024 / 1024) > 1) {
+                        if ((stats.size / 1024 / 1024) > 2) {
                             console.log("if statement")
                             setCropImage(`${response.assets[0].uri}`)
                             imageSizeHandler(response.assets[0].fileSize).then(response => {
-                                console.log("Compress percentage: ",response)
+                                console.log("Compress percentage: ", response)
                                 setIsImageSizeExceeds(response);
                                 setRenderCrop(true)
                             }).catch(error => {
@@ -139,9 +178,6 @@ export default function SignupFunction(props) {
                             console.log("else statement")
                             setCropImage(`${response.assets[0].uri}`)
                             setRenderCrop(true)
-                            // RNFetchBlob.fs.readFile(response.assets[0].uri, 'base64').then(res => 
-                            //     setImage(`data:${response.assets[0].type};base64,${res}`)
-                            //     )
                         }
                     })
                     .catch((err) => {
@@ -151,13 +187,25 @@ export default function SignupFunction(props) {
         });
     };
 
-    const renderPremiumButton = (title) => {
+    const renderPremiumButton = (title, type) => {
         return (
             <Button
-                style={{ width: "49%", marginVertical: 10, backgroundColor: isPremium === title ? COLOUR.GOLD : COLOUR.GRAY }}
+                style={{ width: "49%", marginVertical: 10, backgroundColor: whType === type ? COLOUR.GOLD : COLOUR.GRAY }}
                 title={title}
                 onPress={() => {
-                    setIsPremium(title)
+                    setWhType(type)
+                }}
+            />
+        )
+    }
+
+    const renderPremiumButton1 = (title, type) => {
+        return (
+            <Button
+                style={{ width: "49%", marginVertical: 10, backgroundColor: productWeightType === type ? COLOUR.GOLD : COLOUR.GRAY }}
+                title={title}
+                onPress={() => {
+                    setProductWeightType(type)
                 }}
             />
         )
@@ -168,13 +216,39 @@ export default function SignupFunction(props) {
             <View style={styles.btmSheetContainer}>
                 <FlatList
                     numColumns={3}
-                    data={categoryList}
+                    data={categoryList.filter(x => x.parentCategory === selectedMainCategory._id)}
                     renderItem={({ item, index }) => {
                         return (
                             <Button
                                 title={item.name}
                                 onPress={() => {
                                     setSelectedCategory(item);
+                                    setShowWeight(item.showDimensions);
+                                    refRBSheet.current.close()
+                                }}
+                                style={{ paddingHorizontal: 10, margin: 5, paddingVertical: 5, borderRadius: 5, borderWidth: 2, borderColor: COLOUR.PRIMARY, width: "30%" }} />
+                        )
+                    }}
+                    keyExtractor={item => item._id}
+                />
+            </View>
+        )
+    }
+
+    const renderMainCategoryList = () => {
+        return (
+            <View style={styles.btmSheetContainer}>
+                <FlatList
+                    numColumns={3}
+                    data={mainCategoryList}
+                    renderItem={({ item, index }) => {
+                        return (
+                            <Button
+                                title={item.name}
+                                onPress={() => {
+                                    setSelectedMainCategory(item);
+                                    dispatch(storeCategory(item._id));
+                                    setSelectedCategory("");
                                     refRBSheet.current.close()
                                 }}
                                 style={{ paddingHorizontal: 10, margin: 5, paddingVertical: 5, borderRadius: 5, borderWidth: 2, borderColor: COLOUR.PRIMARY, width: "30%" }} />
@@ -207,25 +281,62 @@ export default function SignupFunction(props) {
                             .then(async (stats) => {
                                 console.log("stats: ", stats)
                                 console.log("total size: ", (stats.size / 1024 / 1024))
-                                if ((stats.size / 1024 / 1024) > 1) {
+                                let format = stats.filename.split(".");
+                                let fileData = {
+                                    uri: `file://${res.uri}`,
+                                    name: stats.filename,
+                                    type: `image/${format[1]}`
+                                }
+                                if (imageProcessingType === "NEW") {
+                                    let s3imageList = s3Image;
+                                    s3imageList.push({
+                                        id: s3Image.length,
+                                        data: fileData
+                                    });
+                                    setS3Image(s3imageList);
+                                } else {
+                                    let s3imageList = s3Image;
+                                    let index = s3imageList.findIndex(x => x.id === imageUpdateId);
+                                    s3imageList[index].data = fileData;
+                                    setS3Image(s3imageList);
+                                }
+                                if ((stats.size / 1024 / 1024) > 3) {
                                     ToastAndroid.show("Image size is too big. Please upload another image.", ToastAndroid.CENTER, ToastAndroid.BOTTOM)
                                     return setRenderCrop(false);
                                 } else {
-                                    setImage(`file://${res.uri}`);
+                                    if (imageProcessingType === "NEW") {
+                                        if(image.length === 0) {
+                                            setFirstImageType(imageType);
+                                        }
+                                        let imageList = image;
+                                        imageList.push({
+                                            id: image.length,
+                                            image: `file://${res.uri}`
+                                        });
+                                        setImage(imageList);
+                                    } else {
+                                        let imageList = image;
+                                        let index = imageList.findIndex(x => x.id === imageUpdateId);
+                                        imageList[index].image = `file://${res.uri}`;
+                                        setImage(imageList);
+                                    }
                                     return setRenderCrop(false);
                                 }
                             })
                     }}
                     ref={cropRef}
                     keepAspectRatio
-                    aspectRatio={{ width: 640, height: 640 }}
-                /> : null }
+                    aspectRatio={{ width: imageType === "SQUARE" ? 640 : imageType === "PORTRAIT" ? 640 : 1080, height: imageType === "SQUARE" ? 640 : imageType === "PORTRAIT" ? 820 : 640 }}
+                /> : null}
                 <Button title="Crop image" style={{ width: "60%" }} onPress={() => cropRef.current.saveImage(true, isImageSizeExceeds === "" ? 100 : isImageSizeExceeds)} />
             </View>
         )
     }
     if (renderCrop) {
         return renderCropPicker();
+    }
+    if (loading) {
+        return <View style={styles.loaderContainer}><Loader /></View>
     }
     return (
         <SafeAreaView style={styles.container}>
@@ -235,9 +346,40 @@ export default function SignupFunction(props) {
                 onBackPress={() => props.navigation.goBack()} />
             <View style={styles.mainContainer}>
                 <ScrollView style={{ width: "100%", paddingTop: 10 }} showsVerticalScrollIndicator={false}>
-                    <TouchableOpacity onPress={() => imageHandler()} activeOpacity={9} style={styles.imageButton} >
-                        {!image ? <Icon name="plus" size={50} color={COLOUR.PRIMARY} /> : <Image source={{ uri: image }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />}
-                    </TouchableOpacity>
+                    <View style={styles.imageContainer}>
+                        {
+                            image.map((item, index) => {
+                                return <TouchableOpacity key={index} onPress={() => { setImageProcessingType("UPDATE"); setImageUpdateId(item.id); imageHandler() }} activeOpacity={9} style={[styles.imageButton, { borderWidth: 0 }]} >
+                                    <Image source={{ uri: item.image }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />
+                                    <TouchableOpacity activeOpacity={0.8} onPress={() => {
+                                        setLoading(true);
+                                        let imgList1 = image;
+                                        let imgList2 = s3Image;
+                                        imgList1.splice(index, 1);
+                                        imgList2.splice(index, 1);
+                                        console.log(imgList1)
+                                        setImage(imgList1)
+                                        setS3Image(imgList2)
+                                        setTimeout(() => {
+                                            setLoading(false);
+                                        }, 500)
+                                    }} style={styles.removeImage}>
+                                        <Icon name="close" size={10} color={COLOUR.WHITE} />
+                                    </TouchableOpacity>
+                                </TouchableOpacity>
+                            })
+                        }
+                        {
+                            image.length < 4 ? <TouchableOpacity onPress={() => { setImageProcessingType("NEW"); setImageUpdateId(0); imageHandler() }} activeOpacity={9} style={styles.imageButton} >
+                                <Icon name="plus" size={50} color={COLOUR.PRIMARY} />
+                            </TouchableOpacity> : null
+                        }
+                    </View>
+                    <View style={styles.inputContainer}>
+                        {renderOptions("Portrait", "PORTRAIT")}
+                        {renderOptions("Landscape", "LANDSCAPE")}
+                        {renderOptions("Square", "SQUARE")}
+                    </View>
                     <View style={styles.formContainer}>
                         <Input
                             value={name}
@@ -245,24 +387,67 @@ export default function SignupFunction(props) {
                             keyboardType={"default"}
                             placeholder="Product Name" />
                         <Input
+                            value={sku}
+                            onChangeText={data => setSku(data)}
+                            keyboardType={"default"}
+                            placeholder="SKU" />
+                        <Button title={selectedMainCategory ? selectedMainCategory.name : "Select main category"} onPress={() => { setRenderRBSheetType("MAIN"); refRBSheet.current.open() }} style={[styles.categoryButton, { borderColor: selectedCategory ? COLOUR.PRIMARY : COLOUR.DARK_GRAY }]} textStyle={{ color: COLOUR.BLACK }} />
+                        {selectedMainCategory ? <Button title={selectedCategory ? selectedCategory.name : "Select sub category"} onPress={() => { setRenderRBSheetType("SUB"); refRBSheet.current.open() }} style={[styles.categoryButton, { borderColor: selectedCategory ? COLOUR.PRIMARY : COLOUR.DARK_GRAY }]} textStyle={{ color: COLOUR.BLACK }} /> : null}
+                        <Input
                             value={description}
                             onChangeText={data => setDescription(data)}
                             keyboardType={"default"}
                             multiline
                             style={{ height: 150, textAlignVertical: 'top' }}
                             placeholder="Description" />
+                        <Input
+                            value={specifications}
+                            onChangeText={data => setSpecifications(data)}
+                            keyboardType={"default"}
+                            multiline
+                            style={{ height: 100, textAlignVertical: 'top' }}
+                            placeholder="Specifications(optional)" />
                         <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between" }}>
+                            <Input
+                                value={mrp}
+                                onChangeText={data => setMrp(data)}
+                                keyboardType={"number-pad"}
+                                style={{width: "48%"}}
+                                placeholder="MRP" />
+                                <Input
+                                value={actualPrice}
+                                style={{width: "48%"}}
+                                onChangeText={data => setActualPrice(data)}
+                                keyboardType={"number-pad"}
+                                placeholder="Discount Price" />
+                        </View> 
+                        {showWeight ? <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between" }}>
+                            <Input
+                                value={pWidth}
+                                onChangeText={data => setPWidth(data)}
+                                keyboardType={"number-pad"}
+                                style={{width: "48%"}}
+                                placeholder="Width eg.(25)" />
+                                <Input
+                                value={pHeight}
+                                style={{width: "48%"}}
+                                onChangeText={data => setPHeight(data)}
+                                keyboardType={"number-pad"}
+                                placeholder="Height eg.(35)" />
+                        </View> : null }
 
-                        </View>
-                        <Button title={selectedCategory ? selectedCategory.name : "Select category"} onPress={() => refRBSheet.current.open()} style={[styles.categoryButton, { borderColor: selectedCategory ? COLOUR.PRIMARY : COLOUR.DARK_GRAY }]} textStyle={{ color: COLOUR.BLACK }} />
-                        <View style={styles.inputContainer}>
-                            {renderOptions("Portrait", "PORTRAIT")}
-                            {renderOptions("Landscape", "LANDSCAPE")}
-                            {renderOptions("Square", "SQUARE")}
-                        </View>
                         <View style={{ width: "100%", height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                            {renderPremiumButton("PREMIUM")}
-                            {renderPremiumButton("NON-PREMIUM")}
+                            {renderPremiumButton("CENTIMETER", "CM")}
+                            {renderPremiumButton("FEET", "FT")}
+                        </View>
+                        <Input
+                            value={productWeight}
+                            onChangeText={data => setProductWeight(data)}
+                            keyboardType={"number-pad"}
+                            placeholder="Product Weight eg.(10KG)" />
+                            <View style={{ width: "100%", height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                            {renderPremiumButton1("KILOGRAM", "KG")}
+                            {renderPremiumButton1("GRAM", "GM")}
                         </View>
                         <View style={styles.termsContainer}>
                             <Checkbox
@@ -299,7 +484,7 @@ export default function SignupFunction(props) {
                         }
                     }}
                 >
-                    {renderCategoryList()}
+                    {renderRBSheetType === "SUB" ? renderCategoryList() : renderMainCategoryList()}
                 </RBSheet>
                 <Modal visible={showErrorComponent}>
                     <FailureComponent
@@ -369,15 +554,16 @@ const styles = StyleSheet.create({
         justifyContent: "flex-start"
     },
     imageButton: {
-        width: "50%",
-        height: 150,
+        width: width / 6,
+        height: width / 5,
         borderRadius: 10,
         borderWidth: 2,
         borderColor: COLOUR.PRIMARY,
         overflow: "hidden",
         alignItems: "center",
         justifyContent: "center",
-        alignSelf: "center"
+        alignSelf: "center",
+        margin: 5
     },
     btmSheetContainer: {
         flex: 1,
@@ -408,5 +594,28 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         backgroundColor: COLOUR.BLACK
+    },
+    imageContainer: {
+        width: "100%",
+        height: 150,
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    removeImage: {
+        width: 20,
+        height: 20,
+        backgroundColor: COLOUR.RED,
+        position: "absolute",
+        top: 0,
+        right: 0,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    loaderContainer: {
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center"
     }
 })

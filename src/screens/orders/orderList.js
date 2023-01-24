@@ -61,7 +61,7 @@ export default function Success(props) {
                 <View style={styles.itemTop}>
                     <View style={styles.dataContainer}>
                         <View style={styles.imageContainer}>
-                            <Image source={{ uri: item.orderItems[0].product?.image }} style={styles.itemImage} resizeMode="contain" />
+                            <Image source={{ uri: item.orderItems[0].product?.image[0].image }} style={styles.itemImage} resizeMode="contain" />
                         </View>
                         <View style={styles.itemHeader}>
                             {item.orderItems.map((item1, index) => {

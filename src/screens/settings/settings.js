@@ -21,6 +21,18 @@ const menuData = [
         item: "Delivery charges",
         icon: "truck-delivery-outline",
         screen: "DeliveryCharge"
+    },
+    {
+        id: 3,
+        item: "Shop Setup",
+        icon: "shopping-outline",
+        screen: "ShopList"
+    },
+    {
+        id: 4,
+        item: "Main Categories",
+        icon: "domain-plus",
+        screen: "MainCategoryScreen"
     }
 ]
 export default function Success(props) {

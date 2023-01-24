@@ -1,13 +1,8 @@
 import React, { useState, useRef } from "react";
 import { View, StyleSheet, Dimensions, Image } from "react-native";
 import * as COLOUR from "../../../constants/colors";
-import { check } from "../../../constants/icons";
 import Text from "../../../component/text";
-import TitleContainer from "../../../component/titleContainer";
 import Button from "../../../component/button";
-import Header from "../../../component/header";
-import ServiceContainer from "../../../component/serviceContainer";
-import RBSheet from "react-native-raw-bottom-sheet";
 const { width, height } = Dimensions.get("screen");
 export function FailureComponent(props) {
     return (
