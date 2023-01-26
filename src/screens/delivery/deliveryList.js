@@ -34,17 +34,17 @@ export default function DeliveryList(props) {
     const deliveryList = useSelector(state => state.deliveryList)
 
     useEffect(() => {
-        if (deliveryList.length === 0) {
+        // if (deliveryList.length === 0) {
             getCountryList();
-        } else {
-            setLoading(false);
-        }
+        // } else {
+        //     setLoading(false);
+        // }
     }, [])
 
     const getCountryList = async () => {
         if (await isInternetConnection()) {
             dispatch(setDeliveryList()).then(res => {
-                console.log(res)
+                console.log(res[0].states)
                 setLoading(false);
             }).catch(error => {
                 setLoading(false);

@@ -5,202 +5,139 @@ import Text from "../../../component/text";
 import Button from "../../../component/button";
 import Input from "../../../component/inputBox";
 import { Checkbox } from 'react-native-paper';
-import Icon from "react-native-vector-icons/MaterialCommunityIcons"
-import { launchImageLibrary } from 'react-native-image-picker';
 import RBSheet from "react-native-raw-bottom-sheet";
 import { FlatList } from "react-native-gesture-handler";
-import RNFetchBlob from 'rn-fetch-blob';
 import Header from "../../../component/header";
-import { uploadImg, storeCategoryProduct, deleteImageFromAWS } from "../../../redux/actions";
-import { RadioButton } from "react-native-paper";
-import { putMethod } from "../../../utils/function";
-const { width, height } = Dimensions.get("screen");
-import { CropView } from 'react-native-image-crop-tools';
-import { imageSizeHandler } from "../../../utils/imageHandler";
-import { awsuploadImageToBucket } from "../../../utils/awsconfig"
+import { storeSellerProduct, updateMethod, storeCategory, storeAnalytics } from "../../../redux/actions";
 /* basic imports */
 import { FailureComponent } from "../mascelinous/requestFail";
 import { isInternetConnection } from "../../../utils/checkInternet";
 import { useSelector, useDispatch } from "react-redux";
 import Loader from "../../../component/loader";
 import { failure, net_failure } from "../../../constants/icons";
+const { width, height } = Dimensions.get("screen");
 
-export default function UpdateProducts(props) {
-    const [description, setDescription] = useState("This Painting is 100% handmade made with original 22 carat gold leaves and authentic Jaipur gems by skilled artisans in Thanjavur. Beautiful gift for any auspicious occasion.\n\nMaterials: \n22 Carat Original Gold Foils, \nWater Resistant Plywood, Cloth, \npaints, \nauthentic Jaipur gem stones, \nArabic gum and chalk powder.\n\nFrame: \nTraditional Chettinad Teak Wood frame and Unbreakable fiberglass. Color: Multicolor.\n\nIdeal for:\n· Pooja rooms\n· Home Main Entrance\n· Pooja Doors\n· Waiting Halls\n· Office reception\n· Staircase wall\n· Study room\n· Sit-out area\n· Lobby Area");
+export default function EditProduct(props) {
+    const [description, setDescription] = useState("");
     const [name, setName] = useState("");
-    const [imageStatus, setImageStatus] = React.useState(false);
-    const [image, setImage] = React.useState("");
-    const [imageType, setImageType] = React.useState("");
+    const [selectedMainCategory, setSelectedMainCategory] = useState("");
     const [selectedCategory, setSelectedCategory] = useState("");
     const [isPremium, setIsPremium] = useState("NON-PREMIUM");
-    const [submitLoader, setSubmitLoader] = React.useState(false);
+    const [checked, setChecked] = useState(false);
+    const [submitLoader, setSubmitLoader] = useState(false);
     const refRBSheet = useRef();
-    const [cropImage, setCropImage] = useState("");
-    const [s3Image, setS3Image] = useState("");
-    const [isImageSizeExceeds, setIsImageSizeExceeds] = useState("");
-    const [renderCrop, setRenderCrop] = useState(false);
-    const cropRef = useRef();
-    // edit crop picker height and width management
-    const [squareWidth, setSquareWidth] = useState(640);
-    const [portraitWidth, setPortraitWidth] = useState(710);
-    const [landscapeWidth, setLandscapeWidth] = useState(1080);
-    const [squareHeight, setSquareHeight] = useState(640);
-    const [portraitHeight, setPortraitHeight] = useState(840);
-    const [landscapeHeight, setLandscapeHeight] = useState(720);
+    const [renderRBSheetType, setRenderRBSheetType] = useState("");
+    const [sku, setSku] = useState("");
+    const [specifications, setSpecifications] = useState("");
+    const [mrp, setMrp] = useState(0);
+    const [actualPrice, setActualPrice] = useState(0);
+    const [pWidth, setPWidth] = useState(0);
+    const [pHeight, setPHeight] = useState(0);
+    const [whType, setWhType] = useState("CM");
+    const [showWeight, setShowWeight] = useState(false);
+    const [productWeight, setProductWeight] = useState(0);
+    const [productWeightType, setProductWeightType] = useState("KG");
+    const [deliveryPrice, setDeliveryPrice] = useState(0);
     /* loader and error components */
     const [showErrorComponent, setErrorComponent] = useState(false)
     const [showNetErrorComponent, setNetErrorComponent] = useState(false)
     const [loading, setLoading] = useState(true);
 
     const categoryList = useSelector(state => state.categoryList);
+    const mainCategoryList = useSelector(state => state.mainCategoryList);
     const dispatch = useDispatch();
+    const product_data = props.route.params.data;
 
     useEffect(() => {
         let data = props.route.params.data;
+
+        console.log("Main Category List: ", data.category, mainCategoryList)
+        const mainCat = mainCategoryList.find(x => x._id === data.category.parentCategory);
+        const cat = data.category;
         setName(data.name);
+        setSku(String(data.sku));
         setDescription(data.description);
-        setImage(data.image);
-        setSelectedCategory(data.category)
-        setImageType(data.imageType)
-        setIsPremium(data.isPremium ? "PREMIUM" : "NON-PREMIUM")
+        setSpecifications(data.specification);
+        setMrp(String(data.mrp));
+        setActualPrice(String(data.price));
+        setPWidth(String(data.width));
+        setPHeight(String(data.height));
+        setWhType(String(data.whType));
+        setProductWeightType(String(data.weightType));
+        setProductWeight(String(data.weight));
+        setDeliveryPrice(String(data.deliveryPrice));
+        console.log("Category: ", data.category)
+        setSelectedCategory(cat);
+        console.log("Main Category: ", mainCat)
+        setSelectedMainCategory(mainCat);
+        setTimeout(() => setLoading(false), 500);
     }, [])
 
     async function submitProduct() {
-        if (name === "" || description === "" || image === "" || imageType === "" || selectedCategory === "") {
+        if (name === "" || description === "" || selectedCategory === "" || selectedMainCategory === "" || sku === "" || mrp === "" || mrp === 0 || actualPrice === "" || actualPrice === 0 || deliveryPrice === "") {
             ToastAndroid.show("Enter all the fields to continue....", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
         } else {
-            if (imageStatus === true) {
-                submitWithImage();
+            if (await isInternetConnection()) {
+                setSubmitLoader(true);
+                updateProductToServer()
             } else {
-                submitWithoutImage();
+                setNetErrorComponent(true);
             }
         }
     }
 
-    async function submitWithImage() {
+    const updateProductToServer = () => {
         let proData = props.route.params.data;
-        if (await isInternetConnection()) {
-            awsuploadImageToBucket(s3Image, "Products/").then(async response => {
-                setSubmitLoader(true)
-                let body = {
-                    "name": name,
-                    "description": description,
-                    "category": selectedCategory._id,
-                    "image": response.url,
-                    "imageCode": response.key,
-                    "imageType": imageType,
-                    "isPremium": isPremium === "PREMIUM" ? true : false
-                }
-                return putMethod(`product/${proData._id}`, body).then(res => {
-                    dispatch(deleteImageFromAWS(proData.imageCode))
-                    dispatch(storeCategoryProduct(proData.category._id))
-                    props.navigation.goBack()
-                    setSubmitLoader(false)
-                    return ToastAndroid.show("Product updated!", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
-                }).catch(err => {
-                    setSubmitLoader(false)
-                    console.log("err")
-                    console.log(err)
-                    return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
-                })
-            }).catch(error => {
-                console.log("error")
-                console.log(error)
-                setSubmitLoader(false)
-                return ToastAndroid.show("Something went wrong. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
-            })
-        } else {
-            setNetErrorComponent(true);
+        let body = {
+            "name": name,
+            "description": description,
+            "deliveryPrice": deliveryPrice,
+            "category": selectedCategory._id,
+            "productOwner": global.uid,
+            "isPremium": actualPrice > 50000 ? true : false,
+            "sku": sku,
+            "specification": specifications,
+            "price": actualPrice,
+            "mrp": mrp,
+            "width": pWidth,
+            "height": pHeight,
+            "whType": whType,
+            "weight": productWeight,
+            "weightType": productWeightType
         }
+        return dispatch(updateMethod(`product/${proData._id}`, body)).then(res => {
+            dispatch(storeSellerProduct(global.uid));
+            setSubmitLoader(false)
+            dispatch(storeAnalytics(global.uid))
+            props.navigation.goBack();
+            return ToastAndroid.show("Product updated.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
+        }).catch(err => {
+            setSubmitLoader(false)
+            console.log("err")
+            console.log(err)
+            return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+        })
     }
 
-    async function submitWithoutImage() {
-        let proData = props.route.params.data;
-        if (await isInternetConnection()) {
-            setSubmitLoader(true)
-            let body = {
-                "name": name,
-                "description": description,
-                "category": selectedCategory._id,
-                "owner": "62ebe9823c05919f44021c4c",
-                "imageType": imageType,
-                "isPremium": isPremium === "PREMIUM" ? true : false
-            }
-            return putMethod(`product/${proData._id}`, body).then(res => {
-                dispatch(storeCategoryProduct(proData.category._id))
-                props.navigation.goBack()
-                setSubmitLoader(false)
-                return ToastAndroid.show("Product updated.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
-            }).catch(err => {
-                setSubmitLoader(false)
-                console.log("err")
-                console.log(err)
-                return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
-            })
-        } else {
-            setNetErrorComponent(true);
-        }
-    }
-
-    const imageHandler = () => {
-        if (imageType === "") {
-            return ToastAndroid.show("Please select image orientation(eg. Portrait)", ToastAndroid.BOTTOM, ToastAndroid.CENTER);
-        }
-        let mediaType = "photo";
-        const photooptions = {
-            title: "Attach Files",
-            mediaType: mediaType,
-            takePhotoButtonTitle: "Take a Photo",
-            allowsEditing: true,
-            quality: 1.0
-        };
-        let options = photooptions;
-        launchImageLibrary(options, async (response) => {
-            setIsImageSizeExceeds("");
-            if (response.didCancel) {
-                console.log(response.didCancel)
-            } else if (response.error) {
-                console.log(response.error)
-            } else {
-                console.log(response.assets[0].uri)
-                RNFetchBlob.fs.stat(response.assets[0].uri)
-                    .then(async (stats) => {
-                        console.log(response)
-                        console.log("original fileSize", response.assets[0].fileSize)
-                        if ((stats.size / 1024 / 1024) > 2) {
-                            console.log("if statement")
-                            setCropImage(`${response.assets[0].uri}`)
-                            imageSizeHandler(response.assets[0].fileSize).then(response => {
-                                console.log("Compress percentage: ", response)
-                                setIsImageSizeExceeds(response);
-                                setRenderCrop(true)
-                            }).catch(error => {
-                                console.log(error)
-                                ToastAndroid.show("Something went wrong, please try with different image.", ToastAndroid.BOTTOM, ToastAndroid.CENTER)
-                            })
-                        } else {
-                            console.log("else statement")
-                            setCropImage(`${response.assets[0].uri}`)
-                            setRenderCrop(true)
-                            // RNFetchBlob.fs.readFile(response.assets[0].uri, 'base64').then(res => 
-                            //     setImage(`data:${response.assets[0].type};base64,${res}`)
-                            //     )
-                        }
-                    })
-                    .catch((err) => {
-                        console.log(err);
-                    })
-            }
-        });
-    };
-
-    const renderPremiumButton = (title) => {
+    const renderPremiumButton = (title, type) => {
         return (
             <Button
-                style={{ width: "49%", marginVertical: 10, backgroundColor: isPremium === title ? COLOUR.GOLD : COLOUR.GRAY }}
+                style={{ width: "49%", marginVertical: 10, backgroundColor: whType === type ? COLOUR.GOLD : COLOUR.GRAY }}
                 title={title}
                 onPress={() => {
-                    setIsPremium(title)
+                    setWhType(type)
+                }}
+            />
+        )
+    }
+
+    const renderPremiumButton1 = (title, type) => {
+        return (
+            <Button
+                style={{ width: "49%", marginVertical: 10, backgroundColor: productWeightType === type ? COLOUR.GOLD : COLOUR.GRAY }}
+                title={title}
+                onPress={() => {
+                    setProductWeightType(type)
                 }}
             />
         )
@@ -211,13 +148,14 @@ export default function UpdateProducts(props) {
             <View style={styles.btmSheetContainer}>
                 <FlatList
                     numColumns={3}
-                    data={categoryList}
+                    data={categoryList.filter(x => x.parentCategory === selectedMainCategory._id)}
                     renderItem={({ item, index }) => {
                         return (
                             <Button
                                 title={item.name}
                                 onPress={() => {
                                     setSelectedCategory(item);
+                                    setShowWeight(item.showDimensions);
                                     refRBSheet.current.close()
                                 }}
                                 style={{ paddingHorizontal: 10, margin: 5, paddingVertical: 5, borderRadius: 5, borderWidth: 2, borderColor: COLOUR.PRIMARY, width: "30%" }} />
@@ -229,88 +167,55 @@ export default function UpdateProducts(props) {
         )
     }
 
-    function renderOptions(title, value) {
+    const renderMainCategoryList = () => {
         return (
-            <View style={styles.optionContainer}>
-                <RadioButton color={COLOUR.PRIMARY} status={imageType === value ? "checked" : "unchecked"} onPress={() => setImageType(value)} />
-                <Text title={title} type="hint" style={{ color: COLOUR.DARK_GRAY }} />
-            </View>
-        )
-    }
-
-    function renderCropPicker() {
-        return (
-            <View style={styles.cropViewContainer}>
-                {cropImage !== "" ? <CropView
-                    sourceUrl={cropImage ? cropImage : ""}
-                    style={{ width: width, height: height / 1.5 }}
-                    onImageCrop={(res) => {
-                        console.log(res.uri)
-                        console.log("final size ", res)
-                        return RNFetchBlob.fs.stat(`file://${res.uri}`)
-                            .then(async (stats) => {
-                                console.log("stats: ", stats)
-                                console.log("total size: ", (stats.size / 1024 / 1024))
-                                let format = stats.filename.split(".");
-                                let fileData = {
-                                    uri: `file://${res.uri}`,
-                                    name: stats.filename,
-                                    type: `image/${format[1]}`
-                                }
-                                setS3Image(fileData);
-                                setImageStatus(true)
-                                if ((stats.size / 1024 / 1024) > 3) {
-                                    ToastAndroid.show("Image size is too big. Please upload another image.", ToastAndroid.CENTER, ToastAndroid.BOTTOM)
-                                    return setRenderCrop(false);
-                                } else {
-                                    setImage(`file://${res.uri}`);
-                                    return setRenderCrop(false);
-                                }
-                            })
+            <View style={styles.btmSheetContainer}>
+                <FlatList
+                    numColumns={3}
+                    data={mainCategoryList}
+                    renderItem={({ item, index }) => {
+                        return (
+                            <Button
+                                title={item.name}
+                                onPress={() => {
+                                    setSelectedMainCategory(item);
+                                    dispatch(storeCategory(item._id));
+                                    setSelectedCategory("");
+                                    refRBSheet.current.close()
+                                }}
+                                style={{ paddingHorizontal: 10, margin: 5, paddingVertical: 5, borderRadius: 5, borderWidth: 2, borderColor: COLOUR.PRIMARY, width: "30%" }} />
+                        )
                     }}
-                    ref={cropRef}
-                    keepAspectRatio
-                    aspectRatio={{ width: imageType === "SQUARE" ? squareWidth : imageType === "PORTRAIT" ? portraitWidth : landscapeWidth, height: imageType === "SQUARE" ? squareHeight : imageType === "PORTRAIT" ? portraitHeight : landscapeHeight }}
-                /> : null}
-                <View style={styles.editContainer}>
-                    <View style={{ flexDirection: "row", marginRight: 5, alignItems:"center" }}>
-                        <TouchableOpacity activeOpacity={0.8} onPress={() => imageType === "SQUARE" ? setSquareWidth(squareWidth - 30) : imageType === "PORTRAIT" ? setPortraitWidth(portraitWidth - 30) : setLandscapeWidth(landscapeWidth - 30)} style={styles.editButton}>
-                        <Icon name="minus" size={20} />
-                        </TouchableOpacity>
-                        <Text title={"Width"} type="hint" style={{ color: COLOUR.WHITE }} />
-                        <TouchableOpacity activeOpacity={0.8} onPress={() => imageType === "SQUARE" ? setSquareWidth(squareWidth + 30) : imageType === "PORTRAIT" ? setPortraitWidth(portraitWidth + 30) : setLandscapeWidth(landscapeWidth + 30)} style={styles.editButton}>
-                        <Icon name="plus" size={20} />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{ flexDirection: "row", marginLeft: 5, alignItems:"center" }}>
-                        <TouchableOpacity activeOpacity={0.8} onPress={() => imageType === "SQUARE" ? setSquareHeight(squareHeight - 30) : imageType === "PORTRAIT" ? setPortraitHeight(portraitHeight - 30) : setLandscapeHeight(landscapeHeight - 30)} style={styles.editButton}>
-                        <Icon name="minus" size={20} />
-                        </TouchableOpacity>
-                        <Text title={"Height"} type="hint" style={{ color: COLOUR.WHITE }} />
-                        <TouchableOpacity activeOpacity={0.8} onPress={() => imageType === "SQUARE" ? setSquareHeight(squareHeight + 30) : imageType === "PORTRAIT" ? setPortraitHeight(portraitHeight + 30) : setLandscapeHeight(landscapeHeight + 30)} style={styles.editButton}>
-                        <Icon name="plus" size={20} />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-                <Button title="Crop image" style={{ width: "60%" }} onPress={() => cropRef.current.saveImage(true, isImageSizeExceeds === "" ? 100 : isImageSizeExceeds)} />
+                    keyExtractor={item => item._id}
+                />
             </View>
         )
     }
-    if (renderCrop) {
-        return renderCropPicker();
-    }
 
+    if (loading) {
+        return <View style={styles.loaderContainer}><Loader /></View>
+    }
     return (
         <SafeAreaView style={styles.container}>
             <Header
-                title="Add Product"
+                title="Update Product"
                 back
                 onBackPress={() => props.navigation.goBack()} />
             <View style={styles.mainContainer}>
                 <ScrollView style={{ width: "100%", paddingTop: 10 }} showsVerticalScrollIndicator={false}>
-                    <TouchableOpacity onPress={() => imageHandler()} activeOpacity={9} style={styles.imageButton} >
-                        {!image ? <Icon name="plus" size={50} color={COLOUR.PRIMARY} /> : <Image source={{ uri: image }} style={{ width: "100%", height: "100%" }} resizeMode="contain" />}
-                    </TouchableOpacity>
+                    <Button
+                        title="Update Product Images >>"
+                        onPress={() => {
+                            if(global.selectedProductImage !== undefined) {
+                                product_data.image = global.selectedProductImage;
+                                setTimeout(() => {
+                                    global.selectedProductImage = undefined;
+                                },500);
+                            }
+                            props.navigation.navigate("UpdateProductImage", { product: product_data })
+                        }}
+                        style={[styles.buttonStyle, { marginBottom: 20 }]}
+                        textStyle={{ color: COLOUR.WHITE }} />
                     <View style={styles.formContainer}>
                         <Input
                             value={name}
@@ -318,25 +223,73 @@ export default function UpdateProducts(props) {
                             keyboardType={"default"}
                             placeholder="Product Name" />
                         <Input
+                            value={sku}
+                            onChangeText={data => setSku(data)}
+                            keyboardType={"default"}
+                            placeholder="SKU" />
+                        <Button title={selectedMainCategory ? selectedMainCategory.name : "Select main category"} onPress={() => { setRenderRBSheetType("MAIN"); refRBSheet.current.open() }} style={[styles.categoryButton, { borderColor: selectedCategory ? COLOUR.PRIMARY : COLOUR.DARK_GRAY }]} textStyle={{ color: COLOUR.BLACK }} />
+                        {selectedMainCategory ? <Button title={selectedCategory ? selectedCategory.name : "Select sub category"} onPress={() => { setRenderRBSheetType("SUB"); refRBSheet.current.open() }} style={[styles.categoryButton, { borderColor: selectedCategory ? COLOUR.PRIMARY : COLOUR.DARK_GRAY }]} textStyle={{ color: COLOUR.BLACK }} /> : null}
+                        <Input
                             value={description}
                             onChangeText={data => setDescription(data)}
                             keyboardType={"default"}
                             multiline
                             style={{ height: 150, textAlignVertical: 'top' }}
                             placeholder="Description" />
+                        <Input
+                            value={specifications}
+                            onChangeText={data => setSpecifications(data)}
+                            keyboardType={"default"}
+                            multiline
+                            style={{ height: 100, textAlignVertical: 'top' }}
+                            placeholder="Specifications(optional)" />
                         <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between" }}>
+                            <Input
+                                value={mrp}
+                                onChangeText={data => setMrp(data)}
+                                keyboardType={"number-pad"}
+                                style={{ width: "48%" }}
+                                placeholder="MRP" />
+                            <Input
+                                value={actualPrice}
+                                style={{ width: "48%" }}
+                                onChangeText={data => setActualPrice(data)}
+                                keyboardType={"number-pad"}
+                                placeholder="Discount Price" />
+                        </View>
+                        <View style={{ width: "100%", flexDirection: "row", justifyContent: "space-between" }}>
+                            <Input
+                                value={pWidth}
+                                onChangeText={data => setPWidth(data)}
+                                keyboardType={"number-pad"}
+                                style={{ width: "48%" }}
+                                placeholder="Width eg.(25)" />
+                            <Input
+                                value={pHeight}
+                                style={{ width: "48%" }}
+                                onChangeText={data => setPHeight(data)}
+                                keyboardType={"number-pad"}
+                                placeholder="Height eg.(35)" />
+                        </View>
 
-                        </View>
-                        <Button title={selectedCategory ? selectedCategory.name : "Select category"} onPress={() => refRBSheet.current.open()} style={[styles.categoryButton, { borderColor: selectedCategory ? COLOUR.PRIMARY : COLOUR.DARK_GRAY }]} textStyle={{ color: COLOUR.BLACK }} />
-                        <View style={styles.inputContainer}>
-                            {renderOptions("Portrait", "PORTRAIT")}
-                            {renderOptions("Landscape", "LANDSCAPE")}
-                            {renderOptions("Square", "SQUARE")}
-                        </View>
                         <View style={{ width: "100%", height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                            {renderPremiumButton("PREMIUM")}
-                            {renderPremiumButton("NON-PREMIUM")}
+                            {renderPremiumButton("CENTIMETER", "CM")}
+                            {renderPremiumButton("FEET", "FT")}
                         </View>
+                        <Input
+                            value={productWeight}
+                            onChangeText={data => setProductWeight(data)}
+                            keyboardType={"number-pad"}
+                            placeholder="Product Weight eg.(10KG)" />
+                        <View style={{ width: "100%", height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                            {renderPremiumButton1("KILOGRAM", "KG")}
+                            {renderPremiumButton1("GRAM", "GM")}
+                        </View>
+                        <Input
+                            value={deliveryPrice}
+                            onChangeText={data => setDeliveryPrice(data)}
+                            keyboardType={"number-pad"}
+                            placeholder="Delivery Price eg.(100)" />
                         <Button title="Update" loader={submitLoader} onPress={() => {
                             if (!submitLoader) {
                                 submitProduct()
@@ -362,7 +315,7 @@ export default function UpdateProducts(props) {
                         }
                     }}
                 >
-                    {renderCategoryList()}
+                    {renderRBSheetType === "SUB" ? renderCategoryList() : renderMainCategoryList()}
                 </RBSheet>
                 <Modal visible={showErrorComponent}>
                     <FailureComponent
@@ -432,15 +385,16 @@ const styles = StyleSheet.create({
         justifyContent: "flex-start"
     },
     imageButton: {
-        width: "50%",
-        height: 150,
+        width: width / 6,
+        height: width / 5,
         borderRadius: 10,
         borderWidth: 2,
         borderColor: COLOUR.PRIMARY,
         overflow: "hidden",
         alignItems: "center",
         justifyContent: "center",
-        alignSelf: "center"
+        alignSelf: "center",
+        margin: 5
     },
     btmSheetContainer: {
         flex: 1,
@@ -472,20 +426,27 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         backgroundColor: COLOUR.BLACK
     },
-    editContainer: {
-        width: "50%",
-        padding: 5,
-        alignSelf: "center",
-        alignItems: "center",
-        justifyContent: "space-around",
+    imageContainer: {
+        width: "100%",
+        height: 150,
         flexDirection: "row",
-        marginBottom: 5
+        alignItems: "center",
+        justifyContent: "center"
     },
-    editButton: {
-        backgroundColor: COLOUR.WHITE,
-        width: 25,
-        height: 25,
-        alignItems:"center",
+    removeImage: {
+        width: 20,
+        height: 20,
+        backgroundColor: COLOUR.RED,
+        position: "absolute",
+        top: 0,
+        right: 0,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center"
+    },
+    loaderContainer: {
+        flex: 1,
+        alignItems: "center",
         justifyContent: "center"
     }
 })

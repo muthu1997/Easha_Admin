@@ -14,16 +14,18 @@ export default function EditProfile(props) {
     const [btnLoader, setBtnLoader] = useState(false);
     const user = useSelector(state => state.profile);
     const [name, setName] = useState(user.name);
+    const [email, setEmail] = useState(user.email);
     const dispatch = useDispatch();
 
     function updateProfile() {
-        if (name === "" && name.length < 3) {
+        if (name === "" && name.length < 3 && email === "") {
             ToastAndroid.showWithGravity("Please enter valide name.", ToastAndroid.SHORT, ToastAndroid.CENTER);
         } else {
             if (name != "") {
                 setBtnLoader(true)
                 var data = {
-                    "name": name
+                    "name": name,
+                    "email": email
                 }
                 console.log(user._id)
                 putMethod(`user/update/${user._id}`, data).then(res => {
@@ -62,6 +64,12 @@ export default function EditProfile(props) {
                     placeholder="User Name"
                     value={name}
                     onChangeText={data => setName(data)}
+                    style={[styles.inputStyle, { width: "100%" }]} />
+
+                <Input
+                    placeholder="User Email"
+                    value={email}
+                    onChangeText={data => setEmail(data)}
                     style={[styles.inputStyle, { width: "100%" }]} />
             </View>
             <Button

@@ -68,7 +68,7 @@ export async function putMethod(url, body) {
             .then((res) => {
                 return resolve(res.data);
             })
-            .catch((error) => {return reject(-1)});
+            .catch((error) => {return reject(error.response.data)});
     })
 }
 

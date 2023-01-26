@@ -43,6 +43,8 @@ import Profile from "./src/screens/account/profile";
 import Chat from "./src/screens/account/chat";
 import TandC from "./src/screens/account/tandc";
 import EditProf from "./src/screens/account/editProfile";
+import EarningDetailScreen from './src/screens/account/earnings';
+import FundRaiseListScreen from './src/screens/account/fundRaiseList';
 //Delivery
 import DeliveryPrice from './src/screens/delivery/deliveryList';
 //Settings
@@ -55,8 +57,14 @@ import NewShop from "./src/screens/shop/addShop";
 import UpdateShop from "./src/screens/shop/updateShop";
 import MainCategory from "./src/screens/settings/mainCat";
 import UpdateMainCategory from "./src/screens/settings/updateMainCat";
+import NewUser from "./src/screens/settings/newUser";
+import BankListScreen from './src/screens/bank/bankList';
+import EditBankDetails from './src/screens/bank/updateBank';
+import BankListPendingScreen from './src/screens/bank/bankListPending';
 //Products
 import GetSellerProduct from "./src/screens/product/productBySID";
+import UpdateProductImages from './src/screens/product/updateProdImage';
+import PendingProduct from './src/screens/product/pendingProductSa';
 //Login
 import Login from "./src/screens/login/index";
 //Chat
@@ -65,7 +73,7 @@ import ChatScreen from "./src/screens/chat/chat";
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 const configureStore = () => {
-  const socket = io.connect("http://192.168.0.102:3001");
+  const socket = io.connect("http://192.168.0.104:3001");
   const socketIoMiddleware = createSocketIoMiddleware(socket, "server/")
   return createStore(Store, applyMiddleware(thunk, socketIoMiddleware));
 }
@@ -85,6 +93,7 @@ export default function App() {
       });
     });
 
+    global.messageSentUsers = [];
     return () => { listenForLogout.remove(); unsubscribe }
   }, [])
 
@@ -162,6 +171,8 @@ export default function App() {
         <Stack.Screen name="SellerProduct" component={GetSellerProduct} options={{ headerShown: false }} />
         <Stack.Screen name="NewProduct" component={NewProduct} options={{ headerShown: false }} />
         <Stack.Screen name="EditProduct" component={updateProducts} options={{ headerShown: false }} />
+        <Stack.Screen name="UpdateProductImage" component={UpdateProductImages} options={{ headerShown: false }} />
+        <Stack.Screen name="PendingProductScreen" component={PendingProduct} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -175,6 +186,7 @@ export default function App() {
         <Stack.Screen name="ChatScreen" component={Chat} options={{ headerShown: false }} />
         <Stack.Screen name="Terms" component={TandC} options={{ headerShown: false }} />
         <Stack.Screen name="EditProfile" component={EditProf} options={{ headerShown: false }} />
+        <Stack.Screen name="EarningDetailScreen" component={EarningDetailScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -195,6 +207,14 @@ export default function App() {
         <Stack.Screen name="CategoryList" component={CategoryList} options={{ headerShown: false }} />
         <Stack.Screen name="AddCategory" component={AddCategory} options={{ headerShown: false }} />
         <Stack.Screen name="productlist" component={ProductList} options={{ headerShown: false }} />
+        <Stack.Screen name="EditProduct" component={updateProducts} options={{ headerShown: false }} />
+        <Stack.Screen name="UpdateProductImage" component={UpdateProductImages} options={{ headerShown: false }} />
+        <Stack.Screen name="PendingProductScreen" component={PendingProduct} options={{ headerShown: false }} />
+        <Stack.Screen name="BankListScreen" component={BankListScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="AddSeller" component={NewUser} options={{ headerShown: false }} />
+        <Stack.Screen name="UpdateBankData" component={EditBankDetails} options={{ headerShown: false }} />
+        <Stack.Screen name="BankListPendingScreen" component={BankListPendingScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="FundRaiseListScreen" component={FundRaiseListScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }
@@ -202,8 +222,9 @@ export default function App() {
   function LoginTab() {
     return (
       <Stack.Navigator>
-        <Stack.Screen name="LoginScreen" component={Login} options={{ headerShown: false }} />
+        <Stack.Screen name="LoginHomeScreen" component={Login} options={{ headerShown: false }} />
         <Stack.Screen name="Homescreen" component={BottomTab} options={{ headerShown: false }} />
+        <Stack.Screen name="ChatScreen" component={Chat} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }

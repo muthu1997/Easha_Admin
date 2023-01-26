@@ -4,7 +4,7 @@ import * as COLOUR from "../../../constants/colors";
 import Header from "../../../component/header";
 import { LineChartFunction } from "../../../component/chart";
 import Text from "../../../component/text";
-import { storeAnalytics, storePendingOrderList } from "../../../redux/actions";
+import { storeAnalytics, storePendingOrderList, getBankDetails, getPaymentDetails, getFundRaiseDetails } from "../../../redux/actions";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as STRINGS from "../../../constants/strings";
 import { updateProfileData, getShopList, storeMainCategory } from "../../../redux/actions";
@@ -33,7 +33,6 @@ export default function Dashboard(props) {
 
     const dispatch = useDispatch();
     useEffect(() => {
-        console.log("inside useEffect")
         getLocalDatas();
         const backHandler = BackHandler.addEventListener("onHardwareBackPress", backPress);
         return () => backHandler.remove()
@@ -56,7 +55,6 @@ export default function Dashboard(props) {
             }
             putMethod(`user/update/${global.uid}`, data).then(async res => {
                 await AsyncStorage.setItem(STRINGS.TOKEN_UPDATE, "UPDATED")
-                return console.log(res)
             }).catch(err => {
                 return console.log(err)
             })
@@ -66,6 +64,9 @@ export default function Dashboard(props) {
     const getUserData = (_id) => {
         dispatch(updateProfileData(_id)).then(res => {
             dispatch(storeMainCategory());
+            dispatch(getBankDetails(_id));
+            dispatch(getPaymentDetails(_id))
+            dispatch(getFundRaiseDetails(_id))
             updateFCMToken();
             getDashboardAnalytics(global.uid);
             orderPendingList();
@@ -112,10 +113,9 @@ export default function Dashboard(props) {
 
     async function getDashboardAnalytics(id) {
         if (await isInternetConnection()) {
-            console.log("inside")
             return dispatch(storeAnalytics(id)).then(res => {
+                console.log("inc: ",res)
                 monthlyData.data = res.incomeData;
-                console.log("res.incomeData")
                 return setLoading(false);
             }).catch(error => {
                 console.log(error)

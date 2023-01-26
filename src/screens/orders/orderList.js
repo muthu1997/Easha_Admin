@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { View, StyleSheet, Dimensions, FlatList, Image, ToastAndroid, Modal } from "react-native";
+import { View, StyleSheet, Dimensions, FlatList, Image, ToastAndroid, Modal, TouchableWithoutFeedback, TouchableOpacity } from "react-native";
 import * as COLOUR from "../../../constants/colors";
 import Header from "../../../component/header";
 import { check } from "../../../constants/icons";
@@ -8,9 +8,9 @@ import Text from "../../../component/text";
 import { getMethod, deleteMethod } from "../../../utils/function"
 import Button from "../../../component/button";
 import moment from "moment";
-import { TouchableOpacity } from "react-native-gesture-handler";
 const { width } = Dimensions.get("screen")
 import { storePendingOrderList, storeCompletedOrderList } from "../../../redux/actions";
+import { RoundButton } from "../../../component/roundButton";
 /* basic imports */
 import { FailureComponent } from "../mascelinous/requestFail";
 import { isInternetConnection } from "../../../utils/checkInternet";
@@ -37,7 +37,7 @@ export default function Success(props) {
     function getPendingOrders() {
         setLoading(true)
         dispatch(storePendingOrderList()).then(res => {
-                setOrderList(res)
+            setOrderList(res)
         }).catch(error => {
             ToastAndroid.show("Something went wrong. please go back and try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG);
             setLoading(false);
@@ -57,7 +57,7 @@ export default function Success(props) {
         if (item.status !== "PROCESSING" && item.status !== "DELIVERED") { item.statusCode = 1 }
         if (item.status === "DELIVERED") { item.statusCode = 2 }
         return (
-            <TouchableOpacity activeOpacity={0.8} onPress={() => props.navigation.navigate("OrderDetails", { orderData: item })} style={styles.cardContainer}>
+            <TouchableOpacity onPress={() => props.navigation.navigate("OrderDetails", { orderData: item })} style={styles.cardContainer}>
                 <View style={styles.itemTop}>
                     <View style={styles.dataContainer}>
                         <View style={styles.imageContainer}>
@@ -73,7 +73,10 @@ export default function Success(props) {
                 </View>
                 <View style={styles.itemBottom}>
                     <View style={[styles.dataContainer, { width: "100%" }]}>
-                            <Text type="paragraph" title={`Ordered on ${moment(item.dateOrdered).format("DD MMM YY")}`} style={{ color: COLOUR.BLACK }} />
+                        <Text type="paragraph" title={`Ordered on ${moment(item.dateOrdered).format("DD MMM YY")}`} style={{ color: COLOUR.BLACK }} />
+                        {item.status !== "DELIVERED" ? <TouchableWithoutFeedback>
+                        <RoundButton onPress={() => props.navigation.navigate("ChatScreen", { customer: { _id: item.user._id, name: item.user.name } })} icon="chat" />
+                        </TouchableWithoutFeedback> : null }
                     </View>
                     <View style={[styles.dataContainer, { width: "100%" }]}>
                         <Text type="paragraph" title={"Order ID"} style={{ color: COLOUR.DARK_GRAY }} />
@@ -116,8 +119,8 @@ export default function Success(props) {
                         )
                     }}
                     ListEmptyComponent={() => {
-                        return <View style={{flex: 1, alignItems:"center", justifyContent: "center"}}>
-                        <Text type="paragraph" title={"No orders found."} style={{ color: COLOUR.DARK_GRAY }} />
+                        return <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                            <Text type="paragraph" title={"No orders found."} style={{ color: COLOUR.DARK_GRAY }} />
                         </View>
                     }}
                     keyExtractor={item => item._id} />

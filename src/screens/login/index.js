@@ -9,7 +9,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { updateProfileData } from "../../../redux/actions";
 import { useDispatch } from 'react-redux';
 import * as STRINGS from "../../../constants/strings";
-import SplashScreen from 'react-native-splash-screen'
+import SplashScreen from 'react-native-splash-screen';
+import { RoundButton } from "../../../component/roundButton";
 const { width } = Dimensions.get("screen");
 
 export default function Login(props) {
@@ -17,7 +18,6 @@ export default function Login(props) {
     const [ccode, setCCode] = useState("+91");
     const [password, setPassword] = useState("");
     const [btnLoader, setBtnLoader] = useState(false);
-    const [resetLoader, setResetLoader] = useState(false);
     const dispatch = useDispatch();
 
     useEffect(() => {
@@ -96,6 +96,11 @@ export default function Login(props) {
                 loader={btnLoader}
                 onPress={() => loginFunction()}
                 style={styles.login} />
+            <View style={styles.chatContainer}>
+            <RoundButton
+                icon="chat"
+                onPress={() => props.navigation.navigate("ChatScreen")}/>
+            </View>
         </View>
     )
 }
@@ -151,5 +156,13 @@ const styles = StyleSheet.create({
         alignItems: "center",
         justifyContent: "center",
         flexDirection: "row",
+    },
+    chatContainer: {
+        width: "100%",
+        height: 100,
+        position: "absolute",
+        bottom: 10,
+        alignItems:"center",
+        justifyContent:"center"
     }
 })

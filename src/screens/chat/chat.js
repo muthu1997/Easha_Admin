@@ -6,7 +6,7 @@ import * as STRINGS from "../../../constants/strings";
 import { getMethod, postMethod } from "../../../utils/function";
 import * as COLOUR from "../../../constants/colors";
 import Header from "../../../component/header";
-import { getConversationsByUser } from "../../../redux/actions";
+import { getConversationsByUser, sendNotificationToSeller } from "../../../redux/actions";
 import Loader from "../../../component/loader";
 
 export default function ChatScreen(props) {
@@ -54,6 +54,25 @@ export default function ChatScreen(props) {
             ToastAndroid.show("Unable to create user chat environment. Please go back and try again.")
         })
     }
+    function sendMessage(messages) {
+        messages[0].user.name = customer.name
+        dispatch({
+          type: "private_message",
+          data: { message: messages[0], conversationId: toUser, chatId: getConversationData[0]._id }
+        });
+        dispatch({
+          type: "server/private_message",
+          data: { message: messages[0], conversationId: toUser, chatId: getConversationData[0]._id }
+        });
+        let messageSentUsers = global.messageSentUsers;
+        if(messageSentUsers.filter(x => x === toUser).length === 0){
+          dispatch(sendNotificationToSeller(toUser, "You have new message from your customer. Go to the order list screen to find the message.")).then(res => {
+            console.log(res)
+          })
+          messageSentUsers.push(toUser);
+          global.messageSentUsers = messageSentUsers;
+        }
+      }
     if (loading) {
         return <View style={styles.loaderContainer}><Loader /></View>
     }
@@ -68,16 +87,8 @@ export default function ChatScreen(props) {
                 renderUsernameOnMessage
                 messages={messages}
                 onSend={messages => {
-                    messages[0].user.name = shopList[0].shopName;
-                    dispatch({
-                        type: "private_message",
-                        data: { message: messages[0], conversationId: toUser, chatId: getConversationData[0]._id }
-                    });
-                    dispatch({
-                        type: "server/private_message",
-                        data: { message: messages[0], conversationId: toUser, chatId: getConversationData[0]._id }
-                    });
-                }}
+                    sendMessage(messages)
+                  }}
                 user={{
                     _id: selfUser.userId
                 }}

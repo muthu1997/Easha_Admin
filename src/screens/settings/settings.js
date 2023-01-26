@@ -12,27 +12,47 @@ const { width } = Dimensions.get("screen")
 const menuData = [
     {
         id: 1,
-        item: "Photo sizes",
-        icon: "image-size-select-large",
-        screen: "PhotoSizeList"
+        item: "Main Categories",
+        icon: "domain-plus",
+        screen: "MainCategoryScreen"
     },
     {
         id: 2,
-        item: "Delivery charges",
-        icon: "truck-delivery-outline",
-        screen: "DeliveryCharge"
+        item: "Pending Products",
+        icon: "image-size-select-large",
+        screen: "PendingProductScreen"
     },
     {
         id: 3,
+        item: "Sellers",
+        icon: "truck-delivery-outline",
+        screen: "AddSeller"
+    },
+    {
+        id: 4,
+        item: "Pending Payout List",
+        icon: "bank",
+        screen: "BankListPendingScreen"
+    },
+    {
+        id: 5,
+        item: "Fund Rise Pendings",
+        icon: "currency-rupee",
+        screen: "FundRaiseListScreen"
+    }
+]
+const menuDataSeller = [
+    {
+        id: 1,
         item: "Shop Setup",
         icon: "shopping-outline",
         screen: "ShopList"
     },
     {
-        id: 4,
-        item: "Main Categories",
-        icon: "domain-plus",
-        screen: "MainCategoryScreen"
+        id: 2,
+        item: "Payout Type",
+        icon: "bank",
+        screen: "BankListScreen"
     }
 ]
 export default function Success(props) {
@@ -77,11 +97,11 @@ export default function Success(props) {
     return (
         <View style={styles.container}>
             <Header
-                title="Settings"
+                title={"Settings"}
             />
             <View style={styles.mainContainer}>
                 <FlatList
-                    data={menuData}
+                    data={global.isSA === "true" ? menuData : menuDataSeller}
                     renderItem={({ item, index }) => {
                         return (
                             renderCard(item)

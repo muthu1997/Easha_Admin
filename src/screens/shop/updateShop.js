@@ -22,17 +22,18 @@ export default function ShopAddressScreen(props) {
     const [country, setCountry] = useState("");
     const [loader, setLoader] = useState(false);
     const [pinValidated, setPinValidated] = useState(false);
+    const [gst, setGst] = useState("");
     const dispatch = useDispatch();
     const shopData = props.route.params.data;
     useEffect(() => {
         let addressData = shopData.shopAddress.split(",");
         console.log(shopData)
         setHouseNo(String(shopData.shopDoorNo));
-        if(addressData.length > 1) {
+        if (addressData.length > 1) {
             setStreet(addressData[0]);
             setArea(addressData[1]);
         }
-        if(addressData.length === 1) {
+        if (addressData.length === 1) {
             setStreet(addressData[0]);
         }
         setCity(shopData.shopCity);
@@ -42,7 +43,7 @@ export default function ShopAddressScreen(props) {
         setCompanyName(shopData.shopName);
         setPhone(String(shopData.shopPhone));
         setAdditionalPhone(String(shopData.shopAdditionalPhone));
-    },[])
+    }, [])
 
     function submitAddress() {
         setLoader(true);
@@ -56,7 +57,8 @@ export default function ShopAddressScreen(props) {
                 "shopCountry": country,
                 "shopPhone": Number(phone),
                 "shopAdditionalPhone": Number(additionalPhone),
-                "shopZipCode": zip
+                "shopZipCode": zip,
+                "gst": gst
             }
             return putMethod(`shop/${shopData._id}`, data).then(res => {
                 setHouseNo("");
@@ -158,6 +160,14 @@ export default function ShopAddressScreen(props) {
                 </View>
                 <View style={styles.inputContainer}>
                     <Input
+                        placeholder="GST (optional)"
+                        value={gst}
+                        onChangeText={data => setGst(data)}
+                        keyboardType="default"
+                        style={[styles.inputStyle, { width: "100%" }]} />
+                </View>
+                <View style={styles.inputContainer}>
+                    <Input
                         placeholder="City"
                         value={city}
                         editable={false}
@@ -186,7 +196,7 @@ export default function ShopAddressScreen(props) {
                         style={[styles.inputStyle, { width: "50%", backgroundColor: COLOUR.GRAY }]} />
                 </View>
                 <Button
-                    onPress={() => !loader ? submitAddress() : null }
+                    onPress={() => !loader ? submitAddress() : null}
                     title="Update"
                     loader={loader}
                     style={{ marginTop: 30, backgroundColor: COLOUR.PRIMARY }} />

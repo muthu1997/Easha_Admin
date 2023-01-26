@@ -122,6 +122,7 @@ export default function ProductListBySeller(props) {
             <View style={styles.mainContainer}>
                 <FlatList
                     data={sellerProductList}
+                    initialNumToRender={10}
                     renderItem={({ item, index }) => {
                         return (
                             renderCard(item)

@@ -1,4 +1,4 @@
-import { STORE_ANALYTICS, STORE_CATEGORY, STORE_CAT_PRODUCT, STORE_SIZE, STORE_DELIVERY, STORE_COMPLETED_ORDER, STORE_PENDING_ORDER, STORE_ORDER_DETAILS, UPDATE_PROFILE_DATA, STORE_SHOP_LIST, STORE_MAIN_CATEGORY, STORE_SELLER_PRODUCT } from "./types";
+import { STORE_ANALYTICS, STORE_CATEGORY, STORE_CAT_PRODUCT, STORE_SIZE, STORE_DELIVERY, STORE_COMPLETED_ORDER, STORE_PENDING_ORDER, STORE_ORDER_DETAILS, UPDATE_PROFILE_DATA, STORE_SHOP_LIST, STORE_MAIN_CATEGORY, STORE_SELLER_PRODUCT, STORE_BANKDATA, STORE_EARNINGS_DATA, STORE_FUND_DATA } from "./types";
 
 const mainStore = {
     analytics: [],
@@ -20,7 +20,10 @@ const mainStore = {
     users_online: [],
     selfUser: {},
     conversations: {},
-    seller_products: []
+    seller_products: [],
+    bankList: [],
+    earning_details: {},
+    fund_details: []
 }
 
 export default function mtoreManager(state = mainStore, action) {
@@ -43,6 +46,8 @@ export default function mtoreManager(state = mainStore, action) {
             return { ...state, orderDetails: action.payload }
         case STORE_MAIN_CATEGORY:
             return { ...state, mainCategoryList: action.payload }
+        case STORE_FUND_DATA:
+            return { ...state, fund_details: action.payload }
         case UPDATE_PROFILE_DATA:
             return {
                 ...state,
@@ -50,8 +55,12 @@ export default function mtoreManager(state = mainStore, action) {
             };
         case STORE_SHOP_LIST:
             return { ...state, shopList: action.payload }
+        case STORE_BANKDATA:
+            return { ...state, bankList: action.payload }
         case STORE_SELLER_PRODUCT:
             return { ...state, seller_products: action.payload }
+        case STORE_EARNINGS_DATA:
+            return { ...state, earning_details: action.payload }
         case "users_online":
             const conversations = { ...state.conversations };
             const usersOnline = action.data;

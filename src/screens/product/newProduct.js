@@ -11,7 +11,7 @@ import RBSheet from "react-native-raw-bottom-sheet";
 import { FlatList } from "react-native-gesture-handler";
 import RNFetchBlob from 'rn-fetch-blob';
 import Header from "../../../component/header";
-import { uploadImg, storeCategoryProduct, postMethodFunction, storeCategory } from "../../../redux/actions";
+import { storeAnalytics, storeSellerProduct, postMethodFunction, storeCategory } from "../../../redux/actions";
 import { RadioButton } from "react-native-paper";
 import { imageSizeHandler } from "../../../utils/imageHandler";
 import { CropView } from 'react-native-image-crop-tools';
@@ -54,6 +54,7 @@ export default function SignupFunction(props) {
     const [showWeight, setShowWeight] = useState(false);
     const [productWeight, setProductWeight] = useState(0);
     const [productWeightType, setProductWeightType] = useState("KG");
+    const [deliveryPrice, setDeliveryPrice] = useState(0);
     /* loader and error components */
     const [showErrorComponent, setErrorComponent] = useState(false)
     const [showNetErrorComponent, setNetErrorComponent] = useState(false)
@@ -72,70 +73,91 @@ export default function SignupFunction(props) {
     }, [])
 
     async function submitProduct() {
-        if (name === "" || description === "" || image.length === 0 || imageType === "" || selectedCategory === "") {
+        if (name === "" || description === "" || selectedCategory === "" || selectedMainCategory === "" || sku === "" || mrp === "" || mrp === 0 || actualPrice === "" || actualPrice === 0 || deliveryPrice === "") {
             ToastAndroid.show("Enter all the fields to continue....", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
         } else {
             if (await isInternetConnection()) {
                 setSubmitLoader(true);
                 let imageData = [];
-                await s3Image.map(async(item) => {
+                await s3Image.map(async(item, index) => {
+                    console.log("updated with index ",index, (s3Image.length - 1))
                     await awsuploadImageToBucket(item.data, "Products/").then(async response => {
                         imageData.push({
                             image: response.url,
                             imageCode: response.key
                         })
+                        console.log("updated with index")
+                        if((s3Image.length - 1) === index) {
+                            updateProductToServer(imageData);
+                        }
                     }).catch(error => {
                         console.log("error")
                         console.log(error)
                         return ToastAndroid.show("Something went wrong, while uploading images..", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
                     })
                 })
-                    console.log(imageData)
-                    let body = {
-                        "name": name,
-                        "description": description,
-                        "width": 0,
-                        "height": 0,
-                        "deliveryPrice": 0,
-                        "category": selectedCategory._id,
-                        "image": response.url,
-                        "imageCode": response.key,
-                        "productOwner": global.uid,
-                        "imageType": firstImageType,
-                        "isPremium": actualPrice > 50000 ? true : false,
-                        "sku": sku,
-                        "specification": specifications,
-                        "price": actualPrice,
-                        "mrp": mrp,
-                        "width": pWidth,
-                        "height": pHeight,
-                        "whType": whType,
-                        "isPortrait": firstImageType === "PORTRAIT" ? true : false,
-                        "weight": productWeight,
-                        "weightType": productWeightType
-                    }
-                    // return dispatch(postMethodFunction('product/newproduct', body)).then(res => {
-                    //     setName("");
-                    //     setImage("");
-                    //     setSelectedCategory("");
-                    //     setIsPremium("NON-PREMIUM");
-                    //     setImageType("");
-                    //     if (!checked) {
-                    //         props.navigation.goBack()
-                    //     }
-                    //     dispatch(storeCategoryProduct(props.route.params.catId))
-                    //     setSubmitLoader(false)
-                    //     return ToastAndroid.show("Product added.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
-                    // }).catch(err => {
-                    //     setSubmitLoader(false)
-                    //     console.log("err")
-                    //     console.log(err)
-                    //     return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
-                    // })
             } else {
                 setNetErrorComponent(true);
             }
         }
+    }
+
+    const updateProductToServer = (image) => {
+        console.log(image)
+        let body = {
+            "name": name,
+            "description": description,
+            "deliveryPrice": deliveryPrice,
+            "category": selectedCategory._id,
+            "image": image,
+            "imageCode": "",
+            "productOwner": global.uid,
+            "imageType": firstImageType,
+            "isPremium": actualPrice > 50000 ? true : false,
+            "sku": sku,
+            "specification": specifications,
+            "price": actualPrice,
+            "mrp": mrp,
+            "width": pWidth,
+            "height": pHeight,
+            "whType": whType,
+            "isPortrait": firstImageType === "PORTRAIT" ? true : false,
+            "weight": productWeight,
+            "weightType": productWeightType
+        }
+        console.log(body);
+        return dispatch(postMethodFunction('product/newproduct', body)).then(res => {
+            setName("");
+            setImage([]);
+            setS3Image([]);
+            setSelectedCategory("");
+            setIsPremium("NON-PREMIUM");
+            setImageType("");
+            setSku("");
+            setSelectedMainCategory("");
+            setDescription("");
+            setSpecifications("");
+            setMrp("");
+            setActualPrice("");
+            setPWidth(0);
+            setPHeight(0);
+            setWhType("CM");
+            setProductWeightType("KG");
+            setProductWeight("");
+            setDeliveryPrice("");
+            if (!checked) {
+                props.navigation.goBack()
+            }
+            dispatch(storeSellerProduct(global.uid));
+            setSubmitLoader(false);
+            dispatch(storeAnalytics(global.uid))
+            return ToastAndroid.show("Product added.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.LONG)
+        }).catch(err => {
+            setSubmitLoader(false)
+            console.log("err")
+            console.log(err)
+            return ToastAndroid.show("Something went wrongs. Please try again later.", ToastAndroid.CENTER, ToastAndroid.BOTTOM, ToastAndroid.SHORT)
+        })
     }
 
     const imageHandler = () => {
@@ -325,8 +347,8 @@ export default function SignupFunction(props) {
                             })
                     }}
                     ref={cropRef}
-                    keepAspectRatio
-                    aspectRatio={{ width: imageType === "SQUARE" ? 640 : imageType === "PORTRAIT" ? 640 : 1080, height: imageType === "SQUARE" ? 640 : imageType === "PORTRAIT" ? 820 : 640 }}
+                    keepAspectRatio = {false}
+                    // aspectRatio={{ width: imageType === "SQUARE" ? 640 : imageType === "PORTRAIT" ? 640 : 1080, height: imageType === "SQUARE" ? 640 : imageType === "PORTRAIT" ? 820 : 640 }}
                 /> : null}
                 <Button title="Crop image" style={{ width: "60%" }} onPress={() => cropRef.current.saveImage(true, isImageSizeExceeds === "" ? 100 : isImageSizeExceeds)} />
             </View>
@@ -436,10 +458,10 @@ export default function SignupFunction(props) {
                                 placeholder="Height eg.(35)" />
                         </View> : null }
 
-                        <View style={{ width: "100%", height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                        {showWeight ? <View style={{ width: "100%", height: 60, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                             {renderPremiumButton("CENTIMETER", "CM")}
                             {renderPremiumButton("FEET", "FT")}
-                        </View>
+                        </View> : null }
                         <Input
                             value={productWeight}
                             onChangeText={data => setProductWeight(data)}
@@ -449,6 +471,11 @@ export default function SignupFunction(props) {
                             {renderPremiumButton1("KILOGRAM", "KG")}
                             {renderPremiumButton1("GRAM", "GM")}
                         </View>
+                        <Input
+                            value={deliveryPrice}
+                            onChangeText={data => setDeliveryPrice(data)}
+                            keyboardType={"number-pad"}
+                            placeholder="Delivery Price eg.(100)" />
                         <View style={styles.termsContainer}>
                             <Checkbox
                                 status={checked ? 'checked' : 'unchecked'}

@@ -1,5 +1,5 @@
-import { STORE_ANALYTICS, STORE_CATEGORY, STORE_SIZE, STORE_CAT_PRODUCT, STORE_DELIVERY, STORE_COMPLETED_ORDER, STORE_PENDING_ORDER, STORE_ORDER_DETAILS, UPDATE_PROFILE_DATA, STORE_SHOP_LIST, STORE_MAIN_CATEGORY, STORE_SELLER_PRODUCT } from "./types";
-import { getMethod, uploadImage, putMethod, postMethod, deleteMethod } from "../utils/function";
+import { STORE_ANALYTICS, STORE_CATEGORY, STORE_SIZE, STORE_CAT_PRODUCT, STORE_DELIVERY, STORE_COMPLETED_ORDER, STORE_PENDING_ORDER, STORE_ORDER_DETAILS, UPDATE_PROFILE_DATA, STORE_SHOP_LIST, STORE_MAIN_CATEGORY, STORE_SELLER_PRODUCT, STORE_BANKDATA, STORE_EARNINGS_DATA, STORE_FUND_DATA } from "./types";
+import { getMethod, uploadImage, putMethod, postMethod, sendFirebaseNotification } from "../utils/function";
 
 export const storeAnalytics = (id) => (dispatch) => {
     return new Promise((resolve, reject) => {
@@ -135,7 +135,7 @@ export const setDeliveryList = () => (dispatch) => {
 
 export const storePendingOrderList = () => (dispatch) => {
     return new Promise((resolve, reject) => {
-        getMethod("order/admin/pending").then(res => {
+        getMethod(`order/admin/pending/${global.uid}`).then(res => {
             dispatch({
                 type: STORE_PENDING_ORDER,
                 payload: res.data
@@ -149,7 +149,7 @@ export const storePendingOrderList = () => (dispatch) => {
 
 export const storeCompletedOrderList = () => (dispatch) => {
     return new Promise((resolve, reject) => {
-        getMethod("order/admin/delivered").then(res => {
+        getMethod(`order/admin/delivered/${global.uid}`).then(res => {
             dispatch({
                 type: STORE_COMPLETED_ORDER,
                 payload: res.data
@@ -182,6 +182,7 @@ export const updateProfileData = (_id) => (dispatch) => {
                 type: UPDATE_PROFILE_DATA,
                 payload: res.data
             })
+            global.isSA = res.data.isSA;
             return resolve(res.data);
         }).catch(err => {
             return reject(err);
@@ -231,6 +232,86 @@ export const storeSellerProduct = (id) => (dispatch) => {
             return resolve(res.data);
         }).catch(err => {
             return reject(-1);
+        })
+    })
+}
+
+export const sendNotificationToSeller = (id,message) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`user/seller/token/${id}`).then(res => {
+            let result = res.data;
+            console.log(result)
+            if (result.length > 0) {
+                result.map(item => {
+                    sendFirebaseNotification(message, item.token)
+                })
+            }
+            return resolve(res.data);
+        }).catch(err => {
+            console.log(err)
+            return reject(err);
+        })
+    })
+}
+
+export const getBankDetails = (id) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`seller/baccount/${id}`).then(res => {
+            dispatch({
+                type: STORE_BANKDATA,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const getPendingSellerBankDetails = () => {
+    return new Promise((resolve, reject) => {
+        getMethod(`seller/baccountpending`).then(res => {
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const getPaymentDetails = (id) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`seller/earnings/${id}`).then(res => {
+            dispatch({
+                type: STORE_EARNINGS_DATA,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const getFundRaiseDetails = (id) => (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`seller/fund/${id}`).then(res => {
+            dispatch({
+                type: STORE_FUND_DATA,
+                payload: res.data
+            })
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
+        })
+    })
+}
+
+export const getFundRaisePendingDetails = ()=> (dispatch) => {
+    return new Promise((resolve, reject) => {
+        getMethod(`seller/fundpending`).then(res => {
+            return resolve(res.data);
+        }).catch(err => {
+            return reject(err);
         })
     })
 }

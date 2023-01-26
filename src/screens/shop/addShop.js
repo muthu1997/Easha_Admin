@@ -22,6 +22,7 @@ export default function ShopAddressScreen(props) {
     const [country, setCountry] = useState("");
     const [loader, setLoader] = useState(false);
     const [pinValidated, setPinValidated] = useState(false);
+    const [gst, setGst] = useState("");
     const dispatch = useDispatch();
 
     function submitAddress() {
@@ -39,7 +40,8 @@ export default function ShopAddressScreen(props) {
                 "countryCode": "+91",
                 "shopAdditionalPhone": additionalPhone,
                 "shopZipCode": zip,
-                "shopStatus": "ACTIVE"
+                "shopStatus": "ACTIVE",
+                "gst": gst
             }
             return postMethod('shop/add', data).then(res => {
                 console.log(res)
@@ -138,6 +140,14 @@ export default function ShopAddressScreen(props) {
                         value={additionalPhone}
                         onChangeText={data => setAdditionalPhone(data)}
                         keyboardType="number-pad"
+                        style={[styles.inputStyle, { width: "100%" }]} />
+                </View>
+                <View style={styles.inputContainer}>
+                    <Input
+                        placeholder="GST (optional)"
+                        value={gst}
+                        onChangeText={data => setGst(data)}
+                        keyboardType="default"
                         style={[styles.inputStyle, { width: "100%" }]} />
                 </View>
                 <View style={styles.inputContainer}>
