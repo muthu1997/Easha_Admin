@@ -61,6 +61,7 @@ import NewUser from "./src/screens/settings/newUser";
 import BankListScreen from './src/screens/bank/bankList';
 import EditBankDetails from './src/screens/bank/updateBank';
 import BankListPendingScreen from './src/screens/bank/bankListPending';
+import NewBankDetails from './src/screens/bank/addBank';
 //Products
 import GetSellerProduct from "./src/screens/product/productBySID";
 import UpdateProductImages from './src/screens/product/updateProdImage';
@@ -215,6 +216,7 @@ export default function App() {
         <Stack.Screen name="UpdateBankData" component={EditBankDetails} options={{ headerShown: false }} />
         <Stack.Screen name="BankListPendingScreen" component={BankListPendingScreen} options={{ headerShown: false }} />
         <Stack.Screen name="FundRaiseListScreen" component={FundRaiseListScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="NewBankDetails" component={NewBankDetails} options={{ headerShown: false }} />
       </Stack.Navigator>
     );
   }

@@ -71,11 +71,9 @@ export default function UpdateProductImages(props) {
         let options = photooptions;
         launchImageLibrary(options, async (response) => {
             if (response.didCancel) {
-                console.log(response.didCancel);
-                return ToastAndroid.show(response.didCancel, ToastAndroid.BOTTOM, ToastAndroid.CENTER)
+                console.log(response.didCancel)
             } else if (response.error) {
-                console.log(response.error);
-                return ToastAndroid.show(response.error, ToastAndroid.BOTTOM, ToastAndroid.CENTER)
+                console.log(response.error)
             } else {
                 RNFetchBlob.fs.stat(response.assets[0].uri)
                     .then(async (stats) => {

@@ -45,7 +45,7 @@ export default function BankListScreen(props) {
                 back
                 onBackPress={() => props.navigation.goBack()}
                 rightIcon={bankList.length > 0 ? null : "plus-circle"}
-                onRightButtonPress={() => props.navigation.navigate("NewShop")}
+                onRightButtonPress={() => props.navigation.navigate("NewBankDetails")}
             />
             <View style={styles.mainContainer}>
                 <FlatList

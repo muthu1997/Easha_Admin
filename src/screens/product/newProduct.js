@@ -70,7 +70,18 @@ export default function SignupFunction(props) {
             let filteredCatData = categoryList.find(x => x._id === cat);
             setSelectedCategory(filteredCatData)
         }
+
+        performance()
     }, [])
+
+    async function performance() {
+        let details = [];
+        let dummy = ["ONE", "TWO", "THREE"];
+        let result = await dummy.map((item, index) => {
+            return {id: index, item: item}
+        })
+        console.log(result);
+    }
 
     async function submitProduct() {
         if (name === "" || description === "" || selectedCategory === "" || selectedMainCategory === "" || sku === "" || mrp === "" || mrp === 0 || actualPrice === "" || actualPrice === 0 || deliveryPrice === "") {
@@ -79,15 +90,14 @@ export default function SignupFunction(props) {
             if (await isInternetConnection()) {
                 setSubmitLoader(true);
                 let imageData = [];
-                await s3Image.map(async(item, index) => {
+                 await s3Image.map(async(item, index) => {
                     console.log("updated with index ",index, (s3Image.length - 1))
                     await awsuploadImageToBucket(item.data, "Products/").then(async response => {
                         imageData.push({
                             image: response.url,
                             imageCode: response.key
                         })
-                        console.log("updated with index")
-                        if((s3Image.length - 1) === index) {
+                        if(s3Image.length === imageData.length) {
                             updateProductToServer(imageData);
                         }
                     }).catch(error => {
@@ -103,7 +113,6 @@ export default function SignupFunction(props) {
     }
 
     const updateProductToServer = (image) => {
-        console.log(image)
         let body = {
             "name": name,
             "description": description,

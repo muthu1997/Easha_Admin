@@ -182,8 +182,8 @@ export default function MyOrdersDetails(props) {
                 </View>
                 <View style={[styles.dataContainer]}>
                     <Text title={item.product.name} type="label" lines={1} />
-                    <Text title={`${item.sizeId.size_title}`} type="label" lines={2} style={{ fontSize: 14, color: COLOUR.ORANGE_DARK }} />
-                    <Text title={`₹ ${item.sizeId.price}`} type="label" lines={2} style={{ fontSize: 16, color: COLOUR.GREEN }} />
+                    <Text title={`Quantity: ${item.quantity}`} type="label" lines={2} style={{ fontSize: 14, color: COLOUR.ORANGE_DARK }} />
+                    <Text title={`₹ ${item.product.price}`} type="label" lines={2} style={{ fontSize: 16, color: COLOUR.GREEN }} />
                 </View>
             </View>
         )

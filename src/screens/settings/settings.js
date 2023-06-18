@@ -39,6 +39,12 @@ const menuData = [
         item: "Fund Rise Pendings",
         icon: "currency-rupee",
         screen: "FundRaiseListScreen"
+    },
+    {
+        id: 6,
+        item: "Payout Type",
+        icon: "bank",
+        screen: "BankListScreen"
     }
 ]
 const menuDataSeller = [

@@ -38,7 +38,7 @@ export async function getMethod(url) {
                 return resolve(res.data);
             })
             .catch((error) => {
-                console.log("Error: ",error.response.data)
+                // console.log("Error: ",error.response.data)
                 return reject(-1)
             });
     })
@@ -68,7 +68,7 @@ export async function putMethod(url, body) {
             .then((res) => {
                 return resolve(res.data);
             })
-            .catch((error) => {return reject(error.response.data)});
+            .catch((error) => {return reject(error.response)});
     })
 }
 
